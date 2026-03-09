@@ -1264,6 +1264,7 @@ function goTo(screenId) {
   document.getElementById(screenId).classList.add('active');
   window.scrollTo(0,0);
 }
+window.goTo = goTo;
 
 window.addEventListener('DOMContentLoaded', () => {
   const params = new URLSearchParams(window.location.search);
@@ -1399,6 +1400,8 @@ function enterCustomerApp() {
   subscribeCustomerOrders();
   goTo('screen-customer-app');
 }
+
+window.enterCustomerApp = enterCustomerApp;
 
 function customerLogout() {
   currentUser = null;
