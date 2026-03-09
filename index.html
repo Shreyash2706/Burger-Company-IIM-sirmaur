@@ -1111,14 +1111,26 @@ input:checked + .toggle-slider:before{transform:translateX(20px);}
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
-<script type="module">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+// ── Firebase compat shim — maps modular-style calls to compat SDK ──
+function ref(db, path) { return path ? db.ref(path) : db.ref(); }
+function set(r, val)   { return r.set(val); }
+function get(r)        { return r.get(); }
+function update(r, val){ return r.update(val); }
+function onValue(r, cb){ r.on('value', cb); return () => r.off('value', cb); }
+// push: compat push() returns a new child ref, then we set() on it
+// The app calls: const newRef = push(fbOrdersRef()); await set(newRef, data);
+// So push() must return a ref we can call set() on:
+function push(r)       { return r.push(); }
+</script>
+<script>
+
 /* ══════════════════════════════════════════════════════════
    FIREBASE CONFIG
    Free Realtime Database — syncs orders across all devices
 ══════════════════════════════════════════════════════════ */
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, push, set, get, onValue, update, serverTimestamp }
-  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyB12XGsBeBaY3ec1TrJoJA1Duu_PvTVUk4",
@@ -1142,8 +1154,8 @@ const firebaseConfig = {
    9. Done! Upload this file to GitHub Pages as usual.
 ─────────────────────────────────────────────────────────── */
 
-const app = initializeApp(firebaseConfig);
-const db  = getDatabase(app);
+const app = firebase.initializeApp(firebaseConfig);
+const db  = app.database();
 
 /* ═════════════════════════════════════
    MENU DATA
@@ -1264,7 +1276,6 @@ function goTo(screenId) {
   document.getElementById(screenId).classList.add('active');
   window.scrollTo(0,0);
 }
-window.goTo = goTo;
 
 window.addEventListener('DOMContentLoaded', () => {
   const params = new URLSearchParams(window.location.search);
@@ -1308,7 +1319,6 @@ function showCAuth(cardId) {
     if (e) { e.textContent=''; e.classList.remove('show'); }
   });
 }
-window.showCAuth = showCAuth;
 
 function generateUID(name) {
   const initials = name.trim().split(' ').map(w=>w[0].toUpperCase()).join('').slice(0,2);
@@ -1342,7 +1352,6 @@ async function doRegister() {
   document.getElementById('new-uid-name').textContent = name + ' · +91 ' + phone;
   showCAuth('cauth-success');
 }
-window.doRegister = doRegister;
 
 async function loadSavedUsers() {
   const list = document.getElementById('saved-users-list');
@@ -1375,7 +1384,6 @@ async function doLogin() {
   currentUser = snap.val();
   enterCustomerApp();
 }
-window.doLogin = doLogin;
 
 async function loginAs(phone) {
   const snap = await get(fbUserRef(phone));
@@ -1383,7 +1391,6 @@ async function loginAs(phone) {
   currentUser = snap.val();
   enterCustomerApp();
 }
-window.loginAs = loginAs;
 
 function enterCustomerApp() {
   if (!currentUser) return;
@@ -1401,7 +1408,6 @@ function enterCustomerApp() {
   goTo('screen-customer-app');
 }
 
-window.enterCustomerApp = enterCustomerApp;
 
 function customerLogout() {
   currentUser = null;
@@ -1418,12 +1424,10 @@ function customerLogout() {
   showCAuth('cauth-register');
   goTo('screen-customer-auth');
 }
-window.customerLogout = customerLogout;
 
 function toggleProfileDrop() {
   document.getElementById('profile-dropdown').classList.toggle('open');
 }
-window.toggleProfileDrop = toggleProfileDrop;
 
 document.addEventListener('click', e => {
   const dd   = document.getElementById('profile-dropdown');
@@ -1479,7 +1483,6 @@ function doOutletLogin() {
   subscribeOutletOrders();
   goTo('screen-outlet-app');
 }
-window.doOutletLogin = doOutletLogin;
 
 function outletLogout() {
   if (outletUnsubscribe) { outletUnsubscribe(); outletUnsubscribe = null; }
@@ -1490,7 +1493,6 @@ function outletLogout() {
   document.getElementById('outlet-pass').value = '';
   goTo('screen-role');
 }
-window.outletLogout = outletLogout;
 
 /* ═════════════════════════════════════
    OUTLET — LIVE ORDER SUBSCRIPTION
@@ -1545,7 +1547,6 @@ function buildMenu() {
     // just ensure visible class is right — simpler: show all
   }
 }
-window.buildMenu = buildMenu;
 
 function showCat(cat, btn) {
   document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
@@ -1554,7 +1555,6 @@ function showCat(cat, btn) {
     s.classList.toggle('visible', cat === 'all' || s.dataset.cat === cat)
   );
 }
-window.showCat = showCat;
 
 /* ═════════════════════════════════════
    CART
@@ -1593,7 +1593,6 @@ function updateCartUI() {
 function openCart()  { document.getElementById('cart-drawer').classList.add('open');  document.getElementById('cart-backdrop').classList.add('open'); }
 function closeCart() { document.getElementById('cart-drawer').classList.remove('open'); document.getElementById('cart-backdrop').classList.remove('open'); }
 window.openCart  = openCart;
-window.closeCart = closeCart;
 
 function updateNoteCount() {
   const v  = document.getElementById('order-note').value.length;
@@ -1601,7 +1600,6 @@ function updateNoteCount() {
   el.textContent  = v;
   el.style.color  = v > 120 ? '#e74c3c' : v > 80 ? 'var(--gold)' : 'var(--ash)';
 }
-window.updateNoteCount = updateNoteCount;
 
 /* ═════════════════════════════════════
    PLACE ORDER  →  writes to Firebase
@@ -1662,13 +1660,11 @@ async function placeOrder() {
     btn.disabled = false; btn.textContent = 'PLACE ORDER →';
   }
 }
-window.placeOrder = placeOrder;
 
 function closeTicket() {
   document.getElementById('ticket-modal').classList.remove('show');
   switchTab('orders');
 }
-window.closeTicket = closeTicket;
 
 /* ═════════════════════════════════════
    OUTLET RENDER
@@ -1733,7 +1729,6 @@ async function notifyCustomer(fbKey) {
     alert('Failed to update order. Check connection.');
   }
 }
-window.notifyCustomer = notifyCustomer;
 
 /* ═════════════════════════════════════
    PICKUP BANNER (customer side)
@@ -1758,7 +1753,6 @@ async function closePickup() {
     pendingPickupOrder = null;
   }
 }
-window.closePickup = closePickup;
 
 /* ═════════════════════════════════════
    TAB SWITCHING
@@ -1772,7 +1766,6 @@ function switchTab(tab) {
   document.getElementById('cart-float').style.display = tab === 'menu' ? '' : 'none';
   if (currentUser) renderMyOrders();
 }
-window.switchTab = switchTab;
 
 /* ═════════════════════════════════════
    MY ORDERS RENDER
@@ -1859,7 +1852,6 @@ function switchOutletTab(tab) {
   document.getElementById('otab-stock-btn').classList.toggle('active', tab === 'stock');
   if (tab === 'stock') renderStockMenu();
 }
-window.switchOutletTab = switchOutletTab;
 
 /* ═════════════════════════════════════
    STOCK MANAGEMENT
@@ -1914,7 +1906,6 @@ async function toggleStock(itemId, inStock) {
     console.error(e);
   }
 }
-window.toggleStock = toggleStock;
 
 async function restoreAllStock() {
   if (!confirm('Mark ALL items as In Stock?')) return;
@@ -1925,7 +1916,6 @@ async function restoreAllStock() {
     alert('Failed to restore stock.');
   }
 }
-window.restoreAllStock = restoreAllStock;
 
 /* ═════════════════════════════════════
    UPDATE renderOutlet to refresh badge
