@@ -475,6 +475,111 @@ body{background:var(--char);font-family:'Outfit',sans-serif;color:var(--cream);m
 .empty-queue{text-align:center;padding:52px 20px;color:var(--ash);}
 .empty-queue .eq-icon{font-size:3rem;margin-bottom:10px;}
 
+/* ── OUTLET TABS ── */
+.outlet-tabs{
+  display:flex;border-bottom:1px solid rgba(0,198,255,.12);
+  background:rgba(4,24,36,.6);
+}
+.outlet-tab-btn{
+  flex:1;padding:12px 8px;
+  background:transparent;border:none;cursor:pointer;
+  font-family:'Space Mono',monospace;font-size:.62rem;
+  letter-spacing:1px;font-weight:700;color:var(--ash);
+  border-bottom:2px solid transparent;transition:all .2s;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+}
+.outlet-tab-btn.active{color:var(--outlet-accent);border-bottom-color:var(--outlet-accent);}
+.outlet-tab-btn:hover:not(.active){color:var(--cream);}
+.outlet-tab-badge{
+  background:var(--fire);color:#fff;border-radius:50%;
+  width:16px;height:16px;font-size:.57rem;
+  display:none;align-items:center;justify-content:center;
+}
+.outlet-tab-badge.show{display:flex;}
+
+/* ── OUTLET PANELS ── */
+.outlet-panel{display:none;}
+.outlet-panel.active{display:block;}
+
+/* ── STOCK MANAGEMENT ── */
+.stock-section-header{
+  font-family:'Bebas Neue',sans-serif;font-size:.9rem;
+  letter-spacing:3px;color:var(--ash);
+  padding:14px 14px 8px;
+  border-bottom:1px solid rgba(255,255,255,.05);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.stock-section-header span{color:var(--outlet-accent);}
+.stock-restore-btn{
+  font-size:.6rem;padding:4px 10px;
+  background:rgba(0,198,255,.1);border:1px solid rgba(0,198,255,.25);
+  color:var(--outlet-accent);border-radius:6px;cursor:pointer;
+  font-family:'Space Mono',monospace;letter-spacing:.5px;transition:all .2s;
+}
+.stock-restore-btn:hover{background:rgba(0,198,255,.2);}
+
+.stock-category{margin:0 10px 6px;}
+.stock-cat-label{
+  font-family:'Bebas Neue',sans-serif;font-size:.82rem;
+  letter-spacing:2px;color:var(--gold);
+  padding:10px 4px 6px;
+  border-bottom:1px solid rgba(245,166,35,.1);
+  display:flex;align-items:center;gap:7px;
+}
+.stock-item-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:9px 6px;border-bottom:1px solid rgba(255,255,255,.04);
+  transition:background .15s;
+}
+.stock-item-row:hover{background:rgba(255,255,255,.02);}
+.stock-item-left{display:flex;align-items:center;gap:8px;flex:1;}
+.stock-item-name{font-size:.82rem;color:var(--cream);transition:color .2s;}
+.stock-item-name.out{color:var(--ash);text-decoration:line-through;}
+.stock-item-price{font-family:'Space Mono',monospace;font-size:.7rem;color:var(--ash);margin-right:10px;}
+
+/* Toggle switch */
+.stock-toggle{
+  position:relative;width:42px;height:22px;flex-shrink:0;
+}
+.stock-toggle input{opacity:0;width:0;height:0;}
+.toggle-slider{
+  position:absolute;inset:0;border-radius:22px;cursor:pointer;
+  background:#333;transition:background .25s;
+}
+.toggle-slider:before{
+  content:'';position:absolute;
+  width:16px;height:16px;border-radius:50%;
+  bottom:3px;left:3px;background:#fff;
+  transition:transform .25s;
+}
+input:checked + .toggle-slider{background:var(--leaf);}
+input:checked + .toggle-slider:before{transform:translateX(20px);}
+
+.stock-out-badge{
+  font-size:.58rem;padding:2px 7px;border-radius:4px;
+  background:rgba(232,50,10,.15);color:#e74c3c;
+  border:1px solid rgba(232,50,10,.3);margin-left:6px;
+  font-family:'Space Mono',monospace;letter-spacing:.5px;
+}
+.stock-summary-bar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 14px;
+  background:rgba(255,255,255,.03);
+  border-bottom:1px solid rgba(255,255,255,.06);
+  font-size:.72rem;color:var(--ash);
+}
+.stock-summary-bar strong{color:var(--cream);}
+.stock-summary-bar .out-count{color:#e74c3c;font-weight:700;}
+
+/* Customer menu — out of stock item */
+.menu-item.out-of-stock{opacity:.35;pointer-events:none;}
+.oos-tag{
+  font-size:.62rem;padding:2px 8px;border-radius:4px;
+  background:rgba(232,50,10,.12);color:#e74c3c;
+  border:1px solid rgba(232,50,10,.25);
+  font-family:'Space Mono',monospace;white-space:nowrap;
+}
+
 /* Toast */
 .toast{
   position:fixed;top:62px;left:50%;transform:translateX(-50%) translateY(-20px);
@@ -960,18 +1065,45 @@ body{background:var(--char);font-family:'Outfit',sans-serif;color:var(--cream);m
   </div>
 
   <div class="outlet-hero">
-    <h1>ORDER QUEUE</h1>
-    <p>Burger Company · IIM Sirmaur · Live Orders</p>
+    <h1>OUTLET PANEL</h1>
+    <p>Burger Company · IIM Sirmaur · Live Management</p>
   </div>
 
-  <div class="stats-row">
-    <div class="stat-box"><div class="stat-n" id="stat-total">0</div><div class="stat-l">TOTAL</div></div>
-    <div class="stat-box"><div class="stat-n" id="stat-pending">0</div><div class="stat-l">PENDING</div></div>
-    <div class="stat-box"><div class="stat-n" id="stat-ready">0</div><div class="stat-l">READY</div></div>
+  <!-- OUTLET TABS -->
+  <div class="outlet-tabs">
+    <button class="outlet-tab-btn active" id="otab-orders-btn" onclick="switchOutletTab('orders')">
+      📋 ORDERS
+      <span class="outlet-tab-badge" id="outlet-pending-badge">0</span>
+    </button>
+    <button class="outlet-tab-btn" id="otab-stock-btn" onclick="switchOutletTab('stock')">
+      🥗 MENU STOCK
+      <span class="outlet-tab-badge" id="outlet-oos-badge">0</span>
+    </button>
   </div>
 
-  <div class="orders-container" id="orders-container">
-    <div class="empty-queue"><div class="eq-icon">📭</div><p>No orders yet.<br>Waiting for students to order.</p></div>
+  <!-- ORDERS PANEL -->
+  <div class="outlet-panel active" id="outlet-panel-orders">
+    <div class="stats-row">
+      <div class="stat-box"><div class="stat-n" id="stat-total">0</div><div class="stat-l">TOTAL</div></div>
+      <div class="stat-box"><div class="stat-n" id="stat-pending">0</div><div class="stat-l">PENDING</div></div>
+      <div class="stat-box"><div class="stat-n" id="stat-ready">0</div><div class="stat-l">READY</div></div>
+    </div>
+    <div class="orders-container" id="orders-container">
+      <div class="empty-queue"><div class="eq-icon">📭</div><p>No orders yet.<br>Waiting for students to order.</p></div>
+    </div>
+  </div>
+
+  <!-- STOCK MANAGEMENT PANEL -->
+  <div class="outlet-panel" id="outlet-panel-stock" style="padding-bottom:40px;">
+    <div class="stock-section-header">
+      MENU AVAILABILITY
+      <button class="stock-restore-btn" onclick="restoreAllStock()">↺ RESTORE ALL</button>
+    </div>
+    <div class="stock-summary-bar">
+      <span>Toggle items to mark them out of stock</span>
+      <span><span class="out-count" id="oos-count">0</span> out of stock</span>
+    </div>
+    <div id="stock-menu-list"></div>
   </div>
 
 </div>
@@ -979,7 +1111,40 @@ body{background:var(--char);font-family:'Outfit',sans-serif;color:var(--cream);m
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
-<script>
+<script type="module">
+/* ══════════════════════════════════════════════════════════
+   FIREBASE CONFIG
+   Free Realtime Database — syncs orders across all devices
+══════════════════════════════════════════════════════════ */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, push, set, get, onValue, update, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB12XGsBeBaY3ec1TrJoJA1Duu_PvTVUk4",
+  authDomain: "burger-company-iim.firebaseapp.com",
+  databaseURL: "https://burger-company-iim-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "burger-company-iim",
+  storageBucket: "burger-company-iim.firebasestorage.app",
+  messagingSenderId: "464583441863",
+  appId: "1:464583441863:web:0648d0bf58a6c69fe42de2"
+};
+
+/* ── INSTRUCTIONS ──────────────────────────────────────────
+   1. Go to https://console.firebase.google.com
+   2. Click "Add project" → name it "burger-company-iim" → Continue
+   3. Disable Google Analytics → Create project
+   4. Left sidebar → Build → Realtime Database → Create database
+   5. Choose "Start in test mode" → Enable
+   6. Copy your databaseURL (looks like https://xxx-default-rtdb.firebaseio.com)
+   7. Left sidebar → Project Settings (gear icon) → Your apps → </> Web
+   8. Register app → copy the firebaseConfig object → paste it above replacing the placeholder
+   9. Done! Upload this file to GitHub Pages as usual.
+─────────────────────────────────────────────────────────── */
+
+const app = initializeApp(firebaseConfig);
+const db  = getDatabase(app);
+
 /* ═════════════════════════════════════
    MENU DATA
 ═════════════════════════════════════ */
@@ -1074,10 +1239,6 @@ const SEC={
   'desserts':{l:'Desserts',i:'🍨'},
 };
 
-/* ═════════════════════════════════════
-   OUTLET CREDENTIALS (hardcoded for demo)
-   Change these to your own password!
-═════════════════════════════════════ */
 const OUTLET_CREDENTIALS = { username:'outlet', password:'burger123' };
 
 /* ═════════════════════════════════════
@@ -1085,10 +1246,15 @@ const OUTLET_CREDENTIALS = { username:'outlet', password:'burger123' };
 ═════════════════════════════════════ */
 let currentUser = null;
 let cart = {};
-let orders = [];
-let queueCounter = 0;
+let orders = [];           // local mirror of Firebase orders
+let stockStatus = {};      // itemId -> true means OUT OF STOCK
 let pendingPickupOrder = null;
-const userStore = {}; // phone -> { uid, name, phone }
+let currentTab = 'menu';
+let currentOutletTab = 'orders';
+let outletUnsubscribe = null;
+let customerUnsubscribe = null;
+let stockUnsubscribe = null;
+let shownPickupIds = new Set(); // prevent duplicate popups
 
 /* ═════════════════════════════════════
    SCREEN NAVIGATION
@@ -1099,19 +1265,35 @@ function goTo(screenId) {
   window.scrollTo(0,0);
 }
 
-/* On load — check URL param ?view=customer to skip role selector
-   QR code will point to:  yoursite.com/index.html?view=customer  */
 window.addEventListener('DOMContentLoaded', () => {
   const params = new URLSearchParams(window.location.search);
   const view = params.get('view');
-  if (view === 'customer') {
-    goTo('screen-customer-auth');
-  } else if (view === 'outlet') {
-    goTo('screen-outlet-auth');
-  } else {
-    goTo('screen-role');
-  }
+  if (view === 'customer') goTo('screen-customer-auth');
+  else if (view === 'outlet') goTo('screen-outlet-auth');
+  else goTo('screen-role');
 });
+
+/* ═════════════════════════════════════
+   FIREBASE HELPERS
+═════════════════════════════════════ */
+function fbOrdersRef()    { return ref(db, 'orders'); }
+function fbOrderRef(id)   { return ref(db, 'orders/' + id); }
+function fbUsersRef()     { return ref(db, 'users'); }
+function fbUserRef(phone) { return ref(db, 'users/' + phone); }
+function fbQueueRef()     { return ref(db, 'meta/queueCounter'); }
+function fbStockRef()     { return ref(db, 'stock'); }
+function fbStockItemRef(id){ return ref(db, 'stock/' + id); }
+
+// Convert Firebase snapshot to sorted orders array
+function snapshotToOrders(snap) {
+  if (!snap.exists()) return [];
+  const val = snap.val();
+  return Object.entries(val).map(([fbKey, o]) => ({
+    ...o,
+    fbKey,
+    time: new Date(o.timeMs)
+  })).sort((a,b) => a.queueNum - b.queueNum);
+}
 
 /* ═════════════════════════════════════
    CUSTOMER AUTH
@@ -1119,9 +1301,13 @@ window.addEventListener('DOMContentLoaded', () => {
 function showCAuth(cardId) {
   document.querySelectorAll('#screen-customer-auth .auth-card').forEach(c => c.classList.remove('active'));
   document.getElementById(cardId).classList.add('active');
-  if (cardId === 'cauth-login') renderSavedUsers();
-  ['reg-error','login-error'].forEach(id => { const e=document.getElementById(id); if(e){e.textContent='';e.classList.remove('show');} });
+  if (cardId === 'cauth-login') loadSavedUsers();
+  ['reg-error','login-error'].forEach(id => {
+    const e = document.getElementById(id);
+    if (e) { e.textContent=''; e.classList.remove('show'); }
+  });
 }
+window.showCAuth = showCAuth;
 
 function generateUID(name) {
   const initials = name.trim().split(' ').map(w=>w[0].toUpperCase()).join('').slice(0,2);
@@ -1129,92 +1315,152 @@ function generateUID(name) {
   return `BC-${initials}${num}`;
 }
 
-function doRegister() {
-  const name = document.getElementById('reg-name').value.trim();
+async function doRegister() {
+  const name  = document.getElementById('reg-name').value.trim();
   const phone = document.getElementById('reg-phone').value.trim();
-  const err = document.getElementById('reg-error');
+  const err   = document.getElementById('reg-error');
+
   if (!name || name.length < 2) { err.textContent='Please enter your full name.'; err.classList.add('show'); return; }
-  if (!/^\d{10}$/.test(phone)) { err.textContent='Enter a valid 10-digit mobile number.'; err.classList.add('show'); return; }
-  if (userStore[phone]) { err.textContent='Account already exists. Please sign in.'; err.classList.add('show'); return; }
+  if (!/^\d{10}$/.test(phone))  { err.textContent='Enter a valid 10-digit mobile number.'; err.classList.add('show'); return; }
+
+  // Check if phone already registered in Firebase
+  const snap = await get(fbUserRef(phone));
+  if (snap.exists()) {
+    err.textContent='Account already exists. Please sign in.'; err.classList.add('show'); return;
+  }
   err.classList.remove('show');
-  const uid = generateUID(name);
+
+  const uid  = generateUID(name);
   const user = { uid, name, phone };
-  userStore[phone] = user;
+
+  // Save to Firebase
+  await set(fbUserRef(phone), user);
+
   currentUser = user;
   document.getElementById('new-uid-display').textContent = uid;
   document.getElementById('new-uid-name').textContent = name + ' · +91 ' + phone;
   showCAuth('cauth-success');
 }
+window.doRegister = doRegister;
 
-function doLogin() {
-  const phone = document.getElementById('login-phone').value.trim();
-  const err = document.getElementById('login-error');
-  if (!/^\d{10}$/.test(phone)) { err.textContent='Enter a valid 10-digit number.'; err.classList.add('show'); return; }
-  const user = userStore[phone];
-  if (!user) { err.textContent='No account found. Please register first.'; err.classList.add('show'); return; }
-  err.classList.remove('show');
-  currentUser = user;
-  enterCustomerApp();
-}
-
-function loginAs(phone) {
-  const user = userStore[phone];
-  if (!user) return;
-  currentUser = user;
-  enterCustomerApp();
-}
-
-function renderSavedUsers() {
+async function loadSavedUsers() {
   const list = document.getElementById('saved-users-list');
-  const users = Object.values(userStore);
-  list.innerHTML = users.length === 0 ? '' : users.map(u=>`
-    <div class="user-row" onclick="loginAs('${u.phone}')">
-      <div>
-        <div class="user-row-name">${u.name}</div>
-        <div class="user-row-id">${u.uid}</div>
-        <div class="user-row-phone">+91 ${u.phone}</div>
-      </div>
-      <div style="color:var(--gold);">→</div>
-    </div>`).join('');
+  list.innerHTML = '<div style="color:var(--ash);font-size:.75rem;padding:8px 0;">Loading…</div>';
+  try {
+    const snap = await get(fbUsersRef());
+    if (!snap.exists()) { list.innerHTML = ''; return; }
+    const users = Object.values(snap.val());
+    list.innerHTML = users.map(u => `
+      <div class="user-row" onclick="loginAs('${u.phone}')">
+        <div>
+          <div class="user-row-name">${u.name}</div>
+          <div class="user-row-id">${u.uid}</div>
+          <div class="user-row-phone">+91 ${u.phone}</div>
+        </div>
+        <div style="color:var(--gold);">→</div>
+      </div>`).join('');
+  } catch(e) { list.innerHTML = ''; }
 }
+
+async function doLogin() {
+  const phone = document.getElementById('login-phone').value.trim();
+  const err   = document.getElementById('login-error');
+  if (!/^\d{10}$/.test(phone)) { err.textContent='Enter a valid 10-digit number.'; err.classList.add('show'); return; }
+
+  const snap = await get(fbUserRef(phone));
+  if (!snap.exists()) { err.textContent='No account found. Please register first.'; err.classList.add('show'); return; }
+
+  err.classList.remove('show');
+  currentUser = snap.val();
+  enterCustomerApp();
+}
+window.doLogin = doLogin;
+
+async function loginAs(phone) {
+  const snap = await get(fbUserRef(phone));
+  if (!snap.exists()) return;
+  currentUser = snap.val();
+  enterCustomerApp();
+}
+window.loginAs = loginAs;
 
 function enterCustomerApp() {
   if (!currentUser) return;
   const initials = currentUser.name.split(' ').map(w=>w[0].toUpperCase()).join('').slice(0,2);
-  document.getElementById('user-avatar').textContent = initials;
+  document.getElementById('user-avatar').textContent    = initials;
   document.getElementById('user-chip-name').textContent = currentUser.name.split(' ')[0];
-  document.getElementById('welcome-name').textContent = currentUser.name.split(' ')[0];
-  document.getElementById('pd-uid').textContent = currentUser.uid;
-  document.getElementById('pd-name').textContent = currentUser.name;
-  document.getElementById('pd-phone').textContent = '+91 ' + currentUser.phone;
+  document.getElementById('welcome-name').textContent   = currentUser.name.split(' ')[0];
+  document.getElementById('pd-uid').textContent         = currentUser.uid;
+  document.getElementById('pd-name').textContent        = currentUser.name;
+  document.getElementById('pd-phone').textContent       = '+91 ' + currentUser.phone;
   buildMenu();
   updateCartUI();
   switchTab('menu');
-  updateOrdersBadge();
-  startPolling();
+  subscribeCustomerOrders();
   goTo('screen-customer-app');
 }
 
 function customerLogout() {
   currentUser = null;
   cart = {};
-  stopPolling();
+  orders = [];
+  shownPickupIds.clear();
+  if (customerUnsubscribe) { customerUnsubscribe(); customerUnsubscribe = null; }
+  if (stockUnsubscribe)    { stockUnsubscribe();  stockUnsubscribe  = null; }
+  stockStatus = {};
   document.getElementById('profile-dropdown').classList.remove('open');
-  document.getElementById('reg-name').value='';
-  document.getElementById('reg-phone').value='';
-  document.getElementById('login-phone').value='';
+  document.getElementById('reg-name').value  = '';
+  document.getElementById('reg-phone').value = '';
+  document.getElementById('login-phone').value = '';
   showCAuth('cauth-register');
   goTo('screen-customer-auth');
 }
+window.customerLogout = customerLogout;
 
 function toggleProfileDrop() {
   document.getElementById('profile-dropdown').classList.toggle('open');
 }
+window.toggleProfileDrop = toggleProfileDrop;
+
 document.addEventListener('click', e => {
-  const dd=document.getElementById('profile-dropdown');
-  const chip=document.getElementById('user-chip');
-  if(dd&&chip&&!dd.contains(e.target)&&!chip.contains(e.target)) dd.classList.remove('open');
+  const dd   = document.getElementById('profile-dropdown');
+  const chip = document.getElementById('user-chip');
+  if (dd && chip && !dd.contains(e.target) && !chip.contains(e.target))
+    dd.classList.remove('open');
 });
+
+/* ═════════════════════════════════════
+   CUSTOMER — LIVE ORDER SUBSCRIPTION
+   Listens to Firebase in real-time
+═════════════════════════════════════ */
+function subscribeCustomerOrders() {
+  if (customerUnsubscribe) customerUnsubscribe();
+  customerUnsubscribe = onValue(fbOrdersRef(), (snap) => {
+    orders = snapshotToOrders(snap);
+    updateOrdersBadge();
+    if (currentTab === 'orders') renderMyOrders();
+    checkForReadyNotifications();
+  });
+  // Subscribe to stock changes so menu hides/shows instantly
+  if (stockUnsubscribe) stockUnsubscribe();
+  stockUnsubscribe = onValue(fbStockRef(), (snap) => {
+    stockStatus = snap.exists() ? snap.val() : {};
+    buildMenu(); // rebuild menu with latest stock status
+  });
+}
+
+function checkForReadyNotifications() {
+  if (!currentUser) return;
+  const myReady = orders.filter(o =>
+    o.customer.uid === currentUser.uid &&
+    o.status === 'ready' &&
+    !shownPickupIds.has(o.fbKey)
+  );
+  if (myReady.length > 0) {
+    shownPickupIds.add(myReady[0].fbKey);
+    showPickupBanner(myReady[0]);
+  }
+}
 
 /* ═════════════════════════════════════
    OUTLET AUTH
@@ -1222,19 +1468,42 @@ document.addEventListener('click', e => {
 function doOutletLogin() {
   const user = document.getElementById('outlet-user').value.trim();
   const pass = document.getElementById('outlet-pass').value;
-  const err = document.getElementById('outlet-error');
+  const err  = document.getElementById('outlet-error');
   if (user !== OUTLET_CREDENTIALS.username || pass !== OUTLET_CREDENTIALS.password) {
     err.textContent = 'Incorrect username or password.'; err.classList.add('show'); return;
   }
   err.classList.remove('show');
-  renderOutlet();
+  subscribeOutletOrders();
   goTo('screen-outlet-app');
 }
+window.doOutletLogin = doOutletLogin;
 
 function outletLogout() {
-  document.getElementById('outlet-user').value='';
-  document.getElementById('outlet-pass').value='';
+  if (outletUnsubscribe) { outletUnsubscribe(); outletUnsubscribe = null; }
+  if (stockUnsubscribe)  { stockUnsubscribe();  stockUnsubscribe  = null; }
+  orders = [];
+  stockStatus = {};
+  document.getElementById('outlet-user').value = '';
+  document.getElementById('outlet-pass').value = '';
   goTo('screen-role');
+}
+window.outletLogout = outletLogout;
+
+/* ═════════════════════════════════════
+   OUTLET — LIVE ORDER SUBSCRIPTION
+═════════════════════════════════════ */
+function subscribeOutletOrders() {
+  if (outletUnsubscribe) outletUnsubscribe();
+  outletUnsubscribe = onValue(fbOrdersRef(), (snap) => {
+    orders = snapshotToOrders(snap);
+    renderOutlet();
+  });
+  // Subscribe to stock so outlet panel stays in sync
+  if (stockUnsubscribe) stockUnsubscribe();
+  stockUnsubscribe = onValue(fbStockRef(), (snap) => {
+    stockStatus = snap.exists() ? snap.val() : {};
+    renderStockMenu();
+  });
 }
 
 /* ═════════════════════════════════════
@@ -1242,127 +1511,193 @@ function outletLogout() {
 ═════════════════════════════════════ */
 function buildMenu() {
   const body = document.getElementById('menu-body');
-  const cats = [...new Set(MENU.map(i=>i.cat))];
-  body.innerHTML = cats.map(cat=>{
-    const meta=SEC[cat], items=MENU.filter(i=>i.cat===cat);
+  if (!body) return;
+  const cats = [...new Set(MENU.map(i => i.cat))];
+  body.innerHTML = cats.map(cat => {
+    const meta  = SEC[cat];
+    const items = MENU.filter(i => i.cat === cat);
+    // Skip category entirely if ALL items are out of stock
+    const anyAvailable = items.some(item => !stockStatus[item.id]);
+    if (!anyAvailable) return '';
     return `<div class="menu-section visible" data-cat="${cat}">
       <div class="sec-header">${meta.i} ${meta.l}</div>
-      <div class="item-list">${items.map(item=>`
-        <div class="menu-item">
+      <div class="item-list">${items.map(item => {
+        const oos = !!stockStatus[item.id];
+        return `<div class="menu-item${oos ? ' out-of-stock' : ''}">
           <div class="item-left">
             <div class="${item.type==='veg'?'veg-dot':'non-veg-dot'}"></div>
             <div class="item-name">${item.name}</div>
+            ${oos ? '<span class="oos-tag">OUT OF STOCK</span>' : ''}
           </div>
           <div class="item-price">₹${item.price}</div>
-          <div id="qty-${item.id}"><button class="add-btn" onclick="addToCart('${item.id}')">ADD</button></div>
-        </div>`).join('')}
+          <div id="qty-${item.id}">${oos ? '' : `<button class="add-btn" onclick="addToCart('${item.id}')">ADD</button>`}</div>
+        </div>`;
+      }).join('')}
       </div></div>`;
   }).join('');
+  // Re-apply any active category filter
+  const activeBtn = document.querySelector('.cat-btn.active');
+  if (activeBtn) {
+    const cat = activeBtn.textContent;
+    // just ensure visible class is right — simpler: show all
+  }
 }
+window.buildMenu = buildMenu;
 
 function showCat(cat, btn) {
-  document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  document.querySelectorAll('.menu-section').forEach(s=>s.classList.toggle('visible', cat==='all'||s.dataset.cat===cat));
+  document.querySelectorAll('.menu-section').forEach(s =>
+    s.classList.toggle('visible', cat === 'all' || s.dataset.cat === cat)
+  );
 }
+window.showCat = showCat;
 
 /* ═════════════════════════════════════
    CART
 ═════════════════════════════════════ */
-function addToCart(id) { cart[id]=(cart[id]||0)+1; updateQtyUI(id); updateCartUI(); }
-function changeQty(id,d) { cart[id]=(cart[id]||0)+d; if(cart[id]<=0) delete cart[id]; updateQtyUI(id); updateCartUI(); }
+function addToCart(id)       { cart[id]=(cart[id]||0)+1; updateQtyUI(id); updateCartUI(); }
+function changeQty(id, d)    { cart[id]=(cart[id]||0)+d; if(cart[id]<=0) delete cart[id]; updateQtyUI(id); updateCartUI(); }
+window.addToCart  = addToCart;
+window.changeQty  = changeQty;
+
 function updateQtyUI(id) {
-  const w=document.getElementById(`qty-${id}`); if(!w) return;
-  const qty=cart[id]||0;
-  w.innerHTML = qty===0
+  const w = document.getElementById(`qty-${id}`); if (!w) return;
+  const qty = cart[id] || 0;
+  w.innerHTML = qty === 0
     ? `<button class="add-btn" onclick="addToCart('${id}')">ADD</button>`
     : `<div class="qty-wrap"><button class="qty-btn" onclick="changeQty('${id}',-1)">−</button><span class="qty-num">${qty}</span><button class="qty-btn" onclick="changeQty('${id}',1)">+</button></div>`;
 }
-function getTotal() { return Object.entries(cart).reduce((s,[id,q])=>{const i=MENU.find(m=>m.id===id);return s+(i?i.price*q:0);},0); }
-function getCount() { return Object.values(cart).reduce((s,q)=>s+q,0); }
+function getTotal()  { return Object.entries(cart).reduce((s,[id,q])=>{ const i=MENU.find(m=>m.id===id); return s+(i?i.price*q:0); },0); }
+function getCount()  { return Object.values(cart).reduce((s,q)=>s+q,0); }
+
 function updateCartUI() {
-  const count=getCount(), total=getTotal();
-  document.getElementById('cart-count').textContent=count;
-  document.getElementById('cart-price-float').textContent=`₹${total}`;
-  document.getElementById('cart-float').classList.toggle('show',count>0);
-  document.getElementById('order-btn').disabled=count===0;
-  const list=document.getElementById('cart-items-list');
-  list.innerHTML=count===0
-    ?`<div style="text-align:center;padding:20px;color:var(--ash);font-size:.82rem;">Cart is empty</div>`
-    :Object.entries(cart).map(([id,qty])=>{
-        const i=MENU.find(m=>m.id===id);
+  const count = getCount(), total = getTotal();
+  document.getElementById('cart-count').textContent       = count;
+  document.getElementById('cart-price-float').textContent = `₹${total}`;
+  document.getElementById('cart-float').classList.toggle('show', count > 0);
+  document.getElementById('order-btn').disabled = count === 0;
+  const list = document.getElementById('cart-items-list');
+  list.innerHTML = count === 0
+    ? `<div style="text-align:center;padding:20px;color:var(--ash);font-size:.82rem;">Cart is empty</div>`
+    : Object.entries(cart).map(([id,qty]) => {
+        const i = MENU.find(m => m.id === id);
         return `<div class="cart-row"><span class="cart-row-name">${i.name}</span><span class="cart-row-qty">×${qty}</span><span class="cart-row-price">₹${i.price*qty}</span></div>`;
       }).join('');
-  document.getElementById('cart-total-display').textContent=`₹${total}`;
+  document.getElementById('cart-total-display').textContent = `₹${total}`;
 }
-function openCart(){document.getElementById('cart-drawer').classList.add('open');document.getElementById('cart-backdrop').classList.add('open');}
-function closeCart(){document.getElementById('cart-drawer').classList.remove('open');document.getElementById('cart-backdrop').classList.remove('open');}
-function updateNoteCount(){
-  const v=document.getElementById('order-note').value.length;
-  document.getElementById('note-char-count').textContent=v;
-  const el=document.getElementById('note-char-count');
-  el.style.color=v>120?'#e74c3c':v>80?'var(--gold)':'var(--ash)';
+
+function openCart()  { document.getElementById('cart-drawer').classList.add('open');  document.getElementById('cart-backdrop').classList.add('open'); }
+function closeCart() { document.getElementById('cart-drawer').classList.remove('open'); document.getElementById('cart-backdrop').classList.remove('open'); }
+window.openCart  = openCart;
+window.closeCart = closeCart;
+
+function updateNoteCount() {
+  const v  = document.getElementById('order-note').value.length;
+  const el = document.getElementById('note-char-count');
+  el.textContent  = v;
+  el.style.color  = v > 120 ? '#e74c3c' : v > 80 ? 'var(--gold)' : 'var(--ash)';
 }
+window.updateNoteCount = updateNoteCount;
 
 /* ═════════════════════════════════════
-   PLACE ORDER
+   PLACE ORDER  →  writes to Firebase
 ═════════════════════════════════════ */
-function placeOrder() {
-  if (!currentUser||getCount()===0) return;
-  queueCounter++;
-  const qNum=queueCounter;
-  const orderItems=Object.entries(cart).map(([id,qty])=>{const i=MENU.find(m=>m.id===id);return{id,name:i.name,price:i.price,qty};});
-  const total=getTotal();
-  const note=(document.getElementById('order-note').value||'').trim();
-  const order={queueNum:qNum,items:orderItems,total,note,status:'pending',time:new Date(),customer:{...currentUser}};
-  orders.push(order);
+async function placeOrder() {
+  if (!currentUser || getCount() === 0) return;
+  const btn = document.getElementById('order-btn');
+  btn.disabled = true; btn.textContent = 'PLACING…';
 
-  document.getElementById('t-num').textContent=String(qNum).padStart(2,'0');
-  document.getElementById('t-cname').textContent=currentUser.name+' · '+currentUser.uid;
-  document.getElementById('t-items').innerHTML=orderItems.map(i=>`${i.name} × ${i.qty} — ₹${i.price*i.qty}`).join('<br>');
-  document.getElementById('t-total').textContent=`TOTAL: ₹${total}`;
-  // Show note on ticket
-  const noteBox=document.getElementById('t-note-box');
-  if(note){noteBox.innerHTML=`<div class="t-note-box"><strong>📝 YOUR NOTE</strong>${note}</div>`;noteBox.style.display='block';}
-  else{noteBox.innerHTML='';noteBox.style.display='none';}
-  document.getElementById('ticket-modal').classList.add('show');
+  try {
+    // Get next queue number atomically
+    const metaSnap = await get(fbQueueRef());
+    const qNum = (metaSnap.exists() ? metaSnap.val() : 0) + 1;
+    await set(fbQueueRef(), qNum);
 
-  // Clear note field
-  document.getElementById('order-note').value='';
-  document.getElementById('note-char-count').textContent='0';
-  Object.keys(cart).forEach(id=>{delete cart[id];updateQtyUI(id);});
-  closeCart(); updateCartUI();
-  updateOrdersBadge();
-  if(currentTab==='orders') renderMyOrders();
+    const orderItems = Object.entries(cart).map(([id,qty]) => {
+      const i = MENU.find(m => m.id === id);
+      return { id, name: i.name, price: i.price, qty };
+    });
+    const total = getTotal();
+    const note  = (document.getElementById('order-note').value || '').trim();
+
+    const orderData = {
+      queueNum : qNum,
+      items    : orderItems,
+      total,
+      note     : note || '',
+      status   : 'pending',
+      timeMs   : Date.now(),
+      customer : { ...currentUser }
+    };
+
+    // Push to Firebase — all devices see it instantly
+    const newRef = push(fbOrdersRef());
+    await set(newRef, orderData);
+
+    // Show ticket
+    document.getElementById('t-num').textContent   = String(qNum).padStart(2,'0');
+    document.getElementById('t-cname').textContent = currentUser.name + ' · ' + currentUser.uid;
+    document.getElementById('t-items').innerHTML   = orderItems.map(i=>`${i.name} × ${i.qty} — ₹${i.price*i.qty}`).join('<br>');
+    document.getElementById('t-total').textContent = `TOTAL: ₹${total}`;
+    const noteBox = document.getElementById('t-note-box');
+    if (note) { noteBox.innerHTML=`<div class="t-note-box"><strong>📝 YOUR NOTE</strong>${note}</div>`; noteBox.style.display='block'; }
+    else      { noteBox.innerHTML=''; noteBox.style.display='none'; }
+    document.getElementById('ticket-modal').classList.add('show');
+
+    // Clear cart & note
+    document.getElementById('order-note').value = '';
+    document.getElementById('note-char-count').textContent = '0';
+    Object.keys(cart).forEach(id => { delete cart[id]; updateQtyUI(id); });
+    closeCart();
+    updateCartUI();
+
+  } catch(err) {
+    alert('Failed to place order. Check your internet connection and try again.');
+    console.error(err);
+  } finally {
+    btn.disabled = false; btn.textContent = 'PLACE ORDER →';
+  }
 }
-function closeTicket(){
+window.placeOrder = placeOrder;
+
+function closeTicket() {
   document.getElementById('ticket-modal').classList.remove('show');
-  // Switch to My Orders tab to show the new order
   switchTab('orders');
 }
+window.closeTicket = closeTicket;
 
 /* ═════════════════════════════════════
    OUTLET RENDER
 ═════════════════════════════════════ */
 function renderOutlet() {
-  const pending=orders.filter(o=>o.status==='pending').length;
-  const ready=orders.filter(o=>o.status==='ready').length;
-  document.getElementById('stat-total').textContent=orders.length;
-  document.getElementById('stat-pending').textContent=pending;
-  document.getElementById('stat-ready').textContent=ready;
+  const pending = orders.filter(o => o.status === 'pending').length;
+  const ready   = orders.filter(o => o.status === 'ready').length;
+  document.getElementById('stat-total').textContent   = orders.length;
+  document.getElementById('stat-pending').textContent = pending;
+  document.getElementById('stat-ready').textContent   = ready;
+  // Update pending orders badge on tab
+  const pb = document.getElementById('outlet-pending-badge');
+  if (pb) { pb.textContent = pending; pb.classList.toggle('show', pending > 0); }
 
-  const c=document.getElementById('orders-container');
-  if(orders.length===0){c.innerHTML=`<div class="empty-queue"><div class="eq-icon">📭</div><p>No orders yet.<br>Waiting for students to order.</p></div>`;return;}
+  const c = document.getElementById('orders-container');
+  if (orders.length === 0) {
+    c.innerHTML = `<div class="empty-queue"><div class="eq-icon">📭</div><p>No orders yet.<br>Waiting for students to order.</p></div>`;
+    return;
+  }
 
-  c.innerHTML=[...orders].reverse().map(o=>{
-    const t=o.time.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-    const items=o.items.map(i=>`${i.name} × ${i.qty}`).join(' · ');
-    const[bc,bt]=o.status==='pending'?['badge-pending','⏳ PENDING']:o.status==='ready'?['badge-ready','✅ READY']:['badge-collected','📦 COLLECTED'];
-    const btn=o.status==='pending'
-      ?`<button class="notify-btn btn-notify" onclick="notifyCustomer(${o.queueNum})">🔔 NOTIFY READY</button>`
-      :o.status==='ready'
-      ?`<button class="notify-btn btn-notified">✅ NOTIFIED</button>`
-      :`<button class="notify-btn btn-collected">📦 COLLECTED</button>`;
+  c.innerHTML = [...orders].reverse().map(o => {
+    const t = new Date(o.timeMs).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    const items = o.items.map(i=>`${i.name} × ${i.qty}`).join(' · ');
+    const [bc,bt] = o.status==='pending' ? ['badge-pending','⏳ PENDING']
+                  : o.status==='ready'   ? ['badge-ready','✅ READY']
+                  :                        ['badge-collected','📦 COLLECTED'];
+    const btn = o.status === 'pending'
+      ? `<button class="notify-btn btn-notify" onclick="notifyCustomer('${o.fbKey}')">🔔 NOTIFY READY</button>`
+      : o.status === 'ready'
+      ? `<button class="notify-btn btn-notified">✅ NOTIFIED</button>`
+      : `<button class="notify-btn btn-collected">📦 COLLECTED</button>`;
+
     return `<div class="order-card status-${o.status}">
       <div class="oc-header">
         <div class="oc-left">
@@ -1384,93 +1719,57 @@ function renderOutlet() {
   }).join('');
 }
 
-function notifyCustomer(queueNum) {
-  const order = orders.find(o => o.queueNum === queueNum);
-  if (!order || order.status !== 'pending') return;
-  order.status = 'ready';
-
-  // Queue a notification for the customer — shown when they are on their screen
-  pendingNotifications.push(order.queueNum);
-
-  renderOutlet();
-  showToast(`🔔 Order #${String(queueNum).padStart(2,'0')} marked ready for ${order.customer.name}`, 'outlet');
-
-  // If customer is currently viewing their app, show the banner immediately
-  triggerCustomerNotification();
-}
-
-/* ─── Customer-side live update polling ─── */
-let pollingInterval = null;
-
-function startPolling() {
-  if (pollingInterval) clearInterval(pollingInterval);
-  pollingInterval = setInterval(() => {
-    updateOrdersBadge();
-    if (currentTab === 'orders') renderMyOrders();
-    triggerCustomerNotification();
-  }, 1500); // check every 1.5 seconds
-}
-
-function stopPolling() {
-  if (pollingInterval) clearInterval(pollingInterval);
-  pollingInterval = null;
-}
-
-// Pending notifications queue (outlet sets, customer clears)
-const pendingNotifications = [];
-
-function triggerCustomerNotification() {
-  if (!currentUser) return;
-  // Check if any of THIS user's orders flipped to ready and have a pending notification
-  for (let i = pendingNotifications.length - 1; i >= 0; i--) {
-    const qNum = pendingNotifications[i];
-    const order = orders.find(o => o.queueNum === qNum && o.customer.uid === currentUser.uid && o.status === 'ready');
-    if (order) {
-      pendingNotifications.splice(i, 1); // consume the notification
-      showPickupBanner(order);
-      break;
-    }
+/* ═════════════════════════════════════
+   NOTIFY CUSTOMER  →  updates Firebase
+═════════════════════════════════════ */
+async function notifyCustomer(fbKey) {
+  try {
+    await update(fbOrderRef(fbKey), { status: 'ready' });
+    showToast(`🔔 Order marked ready!`, 'outlet');
+  } catch(e) {
+    alert('Failed to update order. Check connection.');
   }
 }
+window.notifyCustomer = notifyCustomer;
 
+/* ═════════════════════════════════════
+   PICKUP BANNER (customer side)
+═════════════════════════════════════ */
 function showPickupBanner(order) {
   pendingPickupOrder = order;
-  document.getElementById('pickup-num').textContent = `#${String(order.queueNum).padStart(2,'0')}`;
-  document.getElementById('pickup-cname').textContent = `Hey ${order.customer.name}! 🎉`;
-  document.getElementById('pickup-bill-items').innerHTML = order.items.map(i => `${i.name} × ${i.qty} &nbsp; ₹${i.price*i.qty}`).join('<br>');
-  document.getElementById('pickup-total').textContent = `TOTAL: ₹${order.total}`;
+  document.getElementById('pickup-num').textContent    = `#${String(order.queueNum).padStart(2,'00')}`;
+  document.getElementById('pickup-cname').textContent  = `Hey ${order.customer.name}! 🎉`;
+  document.getElementById('pickup-bill-items').innerHTML = order.items.map(i=>`${i.name} × ${i.qty} &nbsp; ₹${i.price*i.qty}`).join('<br>');
+  document.getElementById('pickup-total').textContent  = `TOTAL: ₹${order.total}`;
   document.getElementById('pickup-modal').classList.add('show');
-  // Also update My Orders live
   updateOrdersBadge();
   renderMyOrders();
 }
 
-function closePickup() {
+async function closePickup() {
   document.getElementById('pickup-modal').classList.remove('show');
-  if (pendingPickupOrder) {
-    pendingPickupOrder.status = 'collected';
+  if (pendingPickupOrder && pendingPickupOrder.fbKey) {
+    try {
+      await update(fbOrderRef(pendingPickupOrder.fbKey), { status: 'collected' });
+    } catch(e) { console.error('closePickup error', e); }
     pendingPickupOrder = null;
-    renderOutlet();
-    updateOrdersBadge();
-    renderMyOrders();
   }
 }
+window.closePickup = closePickup;
 
 /* ═════════════════════════════════════
    TAB SWITCHING
 ═════════════════════════════════════ */
-let currentTab = 'menu';
-
 function switchTab(tab) {
   currentTab = tab;
-  document.getElementById('tab-menu-content').style.display = tab==='menu' ? 'block' : 'none';
-  const ordersPanel = document.getElementById('tab-orders-content');
-  ordersPanel.classList.toggle('visible', tab==='orders');
-  document.getElementById('tab-menu-btn').classList.toggle('active', tab==='menu');
-  document.getElementById('tab-orders-btn').classList.toggle('active', tab==='orders');
-  document.getElementById('cart-float').style.display = tab==='menu' ? '' : 'none';
+  document.getElementById('tab-menu-content').style.display = tab === 'menu' ? 'block' : 'none';
+  document.getElementById('tab-orders-content').classList.toggle('visible', tab === 'orders');
+  document.getElementById('tab-menu-btn').classList.toggle('active', tab === 'menu');
+  document.getElementById('tab-orders-btn').classList.toggle('active', tab === 'orders');
+  document.getElementById('cart-float').style.display = tab === 'menu' ? '' : 'none';
   if (currentUser) renderMyOrders();
 }
+window.switchTab = switchTab;
 
 /* ═════════════════════════════════════
    MY ORDERS RENDER
@@ -1478,62 +1777,56 @@ function switchTab(tab) {
 function renderMyOrders() {
   if (!currentUser) return;
   const myOrders = orders.filter(o => o.customer.uid === currentUser.uid);
-  const active = myOrders.filter(o => o.status !== 'collected');
-  const past   = myOrders.filter(o => o.status === 'collected');
+  const active   = myOrders.filter(o => o.status !== 'collected');
+  const past     = myOrders.filter(o => o.status === 'collected');
 
-  const emptyEl = document.getElementById('orders-empty-state');
+  const emptyEl       = document.getElementById('orders-empty-state');
   const activeSection = document.getElementById('active-orders-section');
-  const pastSection = document.getElementById('past-orders-section');
+  const pastSection   = document.getElementById('past-orders-section');
   if (!emptyEl || !activeSection || !pastSection) return;
 
   if (myOrders.length === 0) {
-    emptyEl.style.display = 'block';
+    emptyEl.style.display       = 'block';
     activeSection.style.display = 'none';
-    pastSection.style.display = 'none';
+    pastSection.style.display   = 'none';
     return;
   }
-  emptyEl.style.display = 'none';
+  emptyEl.style.display       = 'none';
   activeSection.style.display = active.length > 0 ? 'block' : 'none';
-  pastSection.style.display = past.length > 0 ? 'block' : 'none';
+  pastSection.style.display   = past.length  > 0 ? 'block' : 'none';
 
   document.getElementById('active-count').textContent = active.length > 0 ? `(${active.length})` : '';
-  document.getElementById('past-count').textContent = past.length > 0 ? `(${past.length})` : '';
-
-  document.getElementById('active-orders-list').innerHTML = [...active].reverse().map(o => buildOrderCard(o)).join('');
-  document.getElementById('past-orders-list').innerHTML = [...past].reverse().map(o => buildOrderCard(o)).join('');
-
-  // Update badge
+  document.getElementById('past-count').textContent   = past.length  > 0 ? `(${past.length})` : '';
+  document.getElementById('active-orders-list').innerHTML = [...active].reverse().map(buildOrderCard).join('');
+  document.getElementById('past-orders-list').innerHTML   = [...past].reverse().map(buildOrderCard).join('');
   updateOrdersBadge();
 }
 
 function buildOrderCard(o) {
-  const t = o.time.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-  const d = o.time.toLocaleDateString([],{day:'numeric',month:'short'});
-  const stClass = o.status === 'pending' ? 'st-pending' : o.status === 'ready' ? 'st-ready' : 'st-collected';
-  const badgeClass = o.status;
-  const badgeText = o.status === 'pending' ? '⏳ Preparing' : o.status === 'ready' ? '✅ Ready to Collect!' : '📦 Collected';
-
-  const footer = o.status === 'ready'
+  const d = new Date(o.timeMs);
+  const t = d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  const ds = d.toLocaleDateString([],{day:'numeric',month:'short'});
+  const stClass   = o.status==='pending' ? 'st-pending' : o.status==='ready' ? 'st-ready' : 'st-collected';
+  const badgeText = o.status==='pending' ? '⏳ Preparing' : o.status==='ready' ? '✅ Ready to Collect!' : '📦 Collected';
+  const footer    = o.status==='ready'
     ? `<div class="moc-collect-note">📍 Collect from MAIN DESK now!</div>`
-    : o.status === 'collected'
-    ? `<div class="moc-done-note">Collected · ${d} ${t}</div>`
-    : `<div class="moc-done-note">Placed · ${d} at ${t}</div>`;
-
+    : o.status==='collected'
+    ? `<div class="moc-done-note">Collected · ${ds} ${t}</div>`
+    : `<div class="moc-done-note">Placed · ${ds} at ${t}</div>`;
   return `<div class="my-order-card ${stClass}">
     <div class="moc-top">
       <div class="moc-left">
         <div class="moc-qnum">#${String(o.queueNum).padStart(2,'0')}</div>
-        <div class="moc-info"><div class="moc-date">${d} · ${t}</div></div>
+        <div class="moc-info"><div class="moc-date">${ds} · ${t}</div></div>
       </div>
-      <div class="moc-badge ${badgeClass}">${badgeText}</div>
+      <div class="moc-badge ${o.status}">${badgeText}</div>
     </div>
     <div class="moc-items">
-      ${o.items.map(i=>`
-        <div class="moc-item-row">
-          <span class="moc-item-name">${i.name}</span>
-          <span class="moc-item-qty">×${i.qty}</span>
-          <span class="moc-item-price">₹${i.price*i.qty}</span>
-        </div>`).join('')}
+      ${o.items.map(i=>`<div class="moc-item-row">
+        <span class="moc-item-name">${i.name}</span>
+        <span class="moc-item-qty">×${i.qty}</span>
+        <span class="moc-item-price">₹${i.price*i.qty}</span>
+      </div>`).join('')}
     </div>
     ${o.note ? `<div class="moc-note"><strong>📝 YOUR NOTE</strong>${o.note}</div>` : ''}
     <div class="moc-footer">
@@ -1547,19 +1840,102 @@ function updateOrdersBadge() {
   if (!currentUser) return;
   const badge = document.getElementById('orders-tab-badge');
   if (!badge) return;
-  const activeCount = orders.filter(o => o.customer.uid === currentUser.uid && o.status !== 'collected').length;
-  badge.textContent = activeCount;
-  badge.classList.toggle('show', activeCount > 0);
+  const n = orders.filter(o => o.customer.uid === currentUser.uid && o.status !== 'collected').length;
+  badge.textContent = n;
+  badge.classList.toggle('show', n > 0);
 }
+
+/* ═════════════════════════════════════
+   OUTLET TAB SWITCHING
+═════════════════════════════════════ */
+function switchOutletTab(tab) {
+  currentOutletTab = tab;
+  document.getElementById('outlet-panel-orders').classList.toggle('active', tab === 'orders');
+  document.getElementById('outlet-panel-stock').classList.toggle('active', tab === 'stock');
+  document.getElementById('otab-orders-btn').classList.toggle('active', tab === 'orders');
+  document.getElementById('otab-stock-btn').classList.toggle('active', tab === 'stock');
+  if (tab === 'stock') renderStockMenu();
+}
+window.switchOutletTab = switchOutletTab;
+
+/* ═════════════════════════════════════
+   STOCK MANAGEMENT
+═════════════════════════════════════ */
+function renderStockMenu() {
+  const container = document.getElementById('stock-menu-list');
+  if (!container) return;
+  const cats = [...new Set(MENU.map(i => i.cat))];
+  const oosCount = Object.keys(stockStatus).filter(k => stockStatus[k]).length;
+  document.getElementById('oos-count').textContent = oosCount;
+  const badge = document.getElementById('outlet-oos-badge');
+  if (badge) { badge.textContent = oosCount; badge.classList.toggle('show', oosCount > 0); }
+
+  container.innerHTML = cats.map(cat => {
+    const meta  = SEC[cat];
+    const items = MENU.filter(i => i.cat === cat);
+    return `<div class="stock-category">
+      <div class="stock-cat-label">${meta.i} ${meta.l}</div>
+      ${items.map(item => {
+        const oos = !!stockStatus[item.id];
+        return `<div class="stock-item-row">
+          <div class="stock-item-left">
+            <div class="${item.type==='veg'?'veg-dot':'non-veg-dot'}"></div>
+            <div class="stock-item-name${oos ? ' out' : ''}">${item.name}${oos ? '<span class="stock-out-badge">OOS</span>' : ''}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="stock-item-price">₹${item.price}</span>
+            <label class="stock-toggle">
+              <input type="checkbox" ${oos ? '' : 'checked'}
+                onchange="toggleStock('${item.id}', this.checked)">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }).join('');
+}
+
+async function toggleStock(itemId, inStock) {
+  try {
+    if (inStock) {
+      // Mark as in stock — remove from Firebase
+      await set(fbStockItemRef(itemId), null);
+    } else {
+      // Mark as out of stock — save to Firebase
+      await set(fbStockItemRef(itemId), true);
+    }
+    showToast(inStock ? `✅ Item marked IN STOCK` : `❌ Item marked OUT OF STOCK`, 'outlet');
+  } catch(e) {
+    alert('Failed to update stock. Check your connection.');
+    console.error(e);
+  }
+}
+window.toggleStock = toggleStock;
+
+async function restoreAllStock() {
+  if (!confirm('Mark ALL items as In Stock?')) return;
+  try {
+    await set(fbStockRef(), null);
+    showToast('✅ All items restored to In Stock', 'outlet');
+  } catch(e) {
+    alert('Failed to restore stock.');
+  }
+}
+window.restoreAllStock = restoreAllStock;
+
+/* ═════════════════════════════════════
+   UPDATE renderOutlet to refresh badge
+═════════════════════════════════════ */
 
 /* ═════════════════════════════════════
    TOAST
 ═════════════════════════════════════ */
 function showToast(msg, type='') {
-  const t=document.getElementById('toast');
-  t.textContent=msg;
-  t.className='toast'+(type==='outlet'?' outlet-toast':'')+' show';
-  setTimeout(()=>t.classList.remove('show'),3000);
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (type==='outlet' ? ' outlet-toast' : '') + ' show';
+  setTimeout(() => t.classList.remove('show'), 3000);
 }
 </script>
 </body>
