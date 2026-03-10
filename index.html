@@ -736,6 +736,261 @@ input:checked + .toggle-slider:before{transform:translateX(20px);}
 .pay-pill.unpaid{background:rgba(232,50,10,.12);color:#f87171;border:1px solid rgba(232,50,10,.3);}
 .pay-pill.paid{background:rgba(22,163,74,.15);color:#4ade80;border:1px solid rgba(22,163,74,.3);}
 
+
+/* ═══════════════════════════════════
+   UPI PAYMENT FLOW — CSS
+═══════════════════════════════════ */
+
+/* Payment modal (full screen, shown after cart) */
+.payment-modal-bg{
+  position:fixed;inset:0;background:rgba(0,0,0,.92);
+  z-index:2000;display:flex;align-items:flex-start;
+  justify-content:center;overflow-y:auto;
+  opacity:0;pointer-events:none;transition:opacity .3s;
+}
+.payment-modal-bg.show{opacity:1;pointer-events:all;}
+.payment-card{
+  background:var(--char);border-radius:20px;
+  width:min(420px,94vw);margin:16px auto;
+  border:1px solid rgba(245,166,35,.2);
+  overflow:hidden;
+}
+.payment-header{
+  background:var(--smoke);padding:16px;
+  border-bottom:1px solid rgba(255,255,255,.06);
+  display:flex;align-items:center;gap:10px;
+}
+.payment-header-icon{font-size:1.4rem;}
+.payment-header-title{
+  font-family:'Arial Black',sans-serif;font-size:1rem;
+  font-weight:900;color:var(--gold);letter-spacing:1px;
+}
+.payment-header-sub{font-size:.72rem;color:var(--ash);margin-top:2px;}
+.payment-body{padding:16px;}
+
+/* Bill summary inside payment modal */
+.pay-bill{
+  background:rgba(255,255,255,.03);border-radius:10px;
+  border:1px solid rgba(255,255,255,.06);
+  padding:12px;margin-bottom:14px;
+}
+.pay-bill-title{
+  font-size:.62rem;letter-spacing:2px;color:var(--ash);
+  font-family:'Space Mono',monospace;margin-bottom:8px;font-weight:700;
+}
+.pay-bill-item{
+  display:flex;justify-content:space-between;
+  font-size:.78rem;color:var(--cream);padding:3px 0;
+}
+.pay-bill-total{
+  display:flex;justify-content:space-between;font-weight:700;
+  font-size:.9rem;color:var(--gold);padding-top:8px;
+  border-top:1px solid rgba(255,255,255,.08);margin-top:6px;
+  font-family:'Space Mono',monospace;
+}
+
+/* QR display area */
+.qr-section{text-align:center;margin-bottom:14px;}
+.qr-label{
+  font-size:.62rem;letter-spacing:2px;color:var(--ash);
+  font-family:'Space Mono',monospace;margin-bottom:10px;font-weight:700;
+}
+.qr-img-wrap{
+  display:inline-flex;align-items:center;justify-content:center;
+  background:#fff;border-radius:12px;padding:10px;
+  width:170px;height:170px;
+}
+.qr-img-wrap img{width:150px;height:150px;object-fit:contain;}
+.qr-placeholder{
+  width:150px;height:150px;display:flex;align-items:center;
+  justify-content:center;flex-direction:column;gap:6px;
+  background:rgba(255,255,255,.04);border-radius:8px;
+  border:2px dashed rgba(245,166,35,.3);
+}
+.qr-placeholder-icon{font-size:2rem;}
+.qr-placeholder-text{font-size:.65rem;color:var(--ash);text-align:center;line-height:1.4;}
+.qr-compress-note{
+  font-size:.62rem;color:var(--ash);margin-top:8px;
+  line-height:1.5;padding:0 10px;opacity:.8;
+}
+
+/* Screenshot upload area */
+.ss-section{margin-bottom:14px;}
+.ss-label{
+  font-size:.62rem;letter-spacing:2px;color:var(--ash);
+  font-family:'Space Mono',monospace;margin-bottom:8px;font-weight:700;
+}
+.ss-upload-area{
+  border:2px dashed rgba(245,166,35,.3);border-radius:10px;
+  padding:16px;text-align:center;cursor:pointer;
+  transition:border-color .2s,background .2s;
+  background:rgba(245,166,35,.02);
+  position:relative;
+}
+.ss-upload-area:hover{
+  border-color:rgba(245,166,35,.6);
+  background:rgba(245,166,35,.05);
+}
+.ss-upload-area input[type=file]{
+  position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;
+}
+.ss-upload-icon{font-size:1.8rem;display:block;margin-bottom:6px;}
+.ss-upload-text{font-size:.78rem;color:var(--ash);}
+.ss-upload-hint{font-size:.65rem;color:rgba(255,255,255,.3);margin-top:4px;}
+.ss-preview{
+  margin-top:10px;border-radius:8px;overflow:hidden;
+  border:1px solid rgba(245,166,35,.3);position:relative;
+  display:none;
+}
+.ss-preview.show{display:block;}
+.ss-preview img{width:100%;max-height:180px;object-fit:contain;background:#000;}
+.ss-preview-remove{
+  position:absolute;top:6px;right:6px;background:rgba(0,0,0,.7);
+  color:#fff;border:none;border-radius:50%;width:24px;height:24px;
+  font-size:.75rem;cursor:pointer;display:flex;align-items:center;justify-content:center;
+}
+.ss-size-warning{
+  font-size:.65rem;color:#f87171;margin-top:6px;display:none;
+}
+
+/* Submit payment button */
+.pay-submit-btn{
+  width:100%;padding:14px;border:none;border-radius:10px;
+  background:linear-gradient(135deg,var(--fire),#c0390a);
+  color:#fff;font-size:.9rem;font-weight:900;
+  letter-spacing:1.5px;cursor:pointer;
+  font-family:'Arial Black',sans-serif;
+  transition:opacity .2s;margin-top:6px;
+}
+.pay-submit-btn:hover{opacity:.88;}
+.pay-submit-btn:disabled{opacity:.4;cursor:not-allowed;}
+
+/* Status badges for new statuses */
+.badge-payment-uploaded{
+  background:rgba(168,85,247,.18);color:#c084fc;
+  border:1px solid rgba(168,85,247,.35);
+}
+.badge-preparing{
+  background:rgba(245,166,35,.18);color:var(--gold);
+  border:1px solid rgba(245,166,35,.35);
+}
+.badge-ready{
+  background:rgba(39,174,96,.18);color:#27ae60;
+  border:1px solid rgba(39,174,96,.35);
+}
+.badge-delivered{
+  background:rgba(74,222,128,.15);color:#4ade80;
+  border:1px solid rgba(74,222,128,.3);
+}
+
+/* Outlet: screenshot viewer modal */
+.ss-viewer-bg{
+  position:fixed;inset:0;background:rgba(0,0,0,.95);
+  z-index:3000;display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .2s;
+}
+.ss-viewer-bg.show{opacity:1;pointer-events:all;}
+.ss-viewer-inner{
+  max-width:min(480px,96vw);width:100%;
+  background:#111;border-radius:16px;overflow:hidden;
+  border:1px solid rgba(0,198,255,.2);
+}
+.ss-viewer-header{
+  background:#0a1a22;padding:12px 16px;
+  display:flex;justify-content:space-between;align-items:center;
+  border-bottom:1px solid rgba(0,198,255,.15);
+}
+.ss-viewer-title{
+  font-size:.82rem;font-weight:700;color:var(--outlet-accent);
+  font-family:'Space Mono',monospace;letter-spacing:1px;
+}
+.ss-viewer-close{
+  background:none;border:none;color:var(--ash);
+  font-size:1.1rem;cursor:pointer;padding:2px 6px;
+}
+.ss-viewer-img{width:100%;max-height:60vh;object-fit:contain;background:#000;display:block;}
+.ss-viewer-actions{
+  padding:12px 16px;background:#0a1a22;
+  display:flex;gap:8px;
+}
+.btn-verify-pay{
+  flex:1;padding:11px;border:none;border-radius:8px;
+  background:linear-gradient(135deg,#16a34a,#15803d);
+  color:#fff;font-size:.78rem;font-weight:700;
+  letter-spacing:1px;cursor:pointer;font-family:'Space Mono',monospace;
+}
+.btn-verify-pay:hover{opacity:.85;}
+.btn-reject-pay{
+  padding:11px 16px;border:1px solid rgba(239,68,68,.4);border-radius:8px;
+  background:rgba(239,68,68,.1);color:#f87171;font-size:.78rem;
+  font-weight:700;letter-spacing:1px;cursor:pointer;font-family:'Space Mono',monospace;
+}
+.btn-reject-pay:hover{background:rgba(239,68,68,.2);}
+
+/* Outlet: QR upload in settings */
+.qr-upload-section{
+  margin:10px;background:rgba(0,198,255,.04);
+  border-radius:12px;border:1px solid rgba(0,198,255,.15);
+  padding:14px;
+}
+.qr-upload-title{
+  font-size:.65rem;letter-spacing:2px;color:var(--outlet-accent);
+  font-family:'Space Mono',monospace;font-weight:700;margin-bottom:10px;
+}
+.qr-current{
+  display:flex;align-items:center;gap:12px;margin-bottom:10px;
+}
+.qr-current-img{
+  width:72px;height:72px;background:#fff;border-radius:8px;
+  padding:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.qr-current-img img{width:64px;height:64px;object-fit:contain;}
+.qr-no-img{
+  width:64px;height:64px;display:flex;align-items:center;justify-content:center;
+  background:rgba(255,255,255,.05);border-radius:6px;
+  font-size:1.6rem;
+}
+.qr-upload-btn{
+  display:inline-block;padding:9px 16px;border-radius:8px;
+  background:var(--outlet-accent);color:#000;font-size:.72rem;
+  font-weight:700;letter-spacing:1px;cursor:pointer;
+  font-family:'Space Mono',monospace;transition:opacity .2s;
+  position:relative;overflow:hidden;
+}
+.qr-upload-btn:hover{opacity:.85;}
+.qr-upload-btn input[type=file]{
+  position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;
+}
+.qr-status{font-size:.72rem;color:var(--ash);margin-top:8px;}
+
+/* Customer status labels for new flow */
+.moc-badge.payment_uploaded{background:rgba(168,85,247,.12);color:#c084fc;border:1px solid rgba(168,85,247,.3);}
+.moc-badge.preparing{background:rgba(245,166,35,.12);color:var(--gold);border:1px solid rgba(245,166,35,.3);}
+.moc-badge.ready{background:rgba(39,174,96,.12);color:#27ae60;border:1px solid rgba(39,174,96,.35);}
+.moc-badge.delivered{background:rgba(74,222,128,.1);color:#4ade80;border:1px solid rgba(74,222,128,.25);}
+
+/* Outlet notify ready btn (new green) */
+.btn-notify-ready-prep{
+  background:linear-gradient(135deg,#16a34a,#15803d);
+  color:#fff;border:none;cursor:pointer;
+  font-size:.68rem;font-weight:700;letter-spacing:1px;
+  font-family:'Space Mono',monospace;
+}
+.btn-notify-ready-prep:hover{opacity:.85;}
+.btn-mark-delivered{
+  background:linear-gradient(135deg,#4ade80,#16a34a);
+  color:#000;border:none;cursor:pointer;
+  font-size:.68rem;font-weight:700;letter-spacing:1px;
+  font-family:'Space Mono',monospace;
+}
+.btn-view-screenshot{
+  background:rgba(168,85,247,.2);color:#c084fc;
+  border:1px solid rgba(168,85,247,.4);cursor:pointer;
+  font-size:.68rem;font-weight:700;letter-spacing:1px;
+  font-family:'Space Mono',monospace;
+}
+.btn-view-screenshot:hover{background:rgba(168,85,247,.35);}
+
 /* scrollbar */
 ::-webkit-scrollbar{width:3px;}
 ::-webkit-scrollbar-track{background:var(--char);}
@@ -1175,7 +1430,7 @@ input:checked + .toggle-slider:before{transform:translateX(20px);}
     <hr style="border:none;border-top:1px solid #eee;margin:6px 0">
     <div class="t-total" id="t-total"></div>
     <div id="t-note-box"></div>
-    <div class="t-note">⏳ We'll notify you when your order is ready</div>
+    <div class="t-note">⏳ Outlet is verifying your payment — you'll be notified when it's confirmed!</div>
     <div class="ticket-perf"><div class="perf-c"></div><div class="perf-c"></div></div>
     <button class="ticket-btn" onclick="closeTicket()">GOT IT 👍</button>
   </div>
@@ -1193,8 +1448,82 @@ input:checked + .toggle-slider:before{transform:translateX(20px);}
       <div class="pickup-bill-items" id="pickup-bill-items"></div>
       <div class="pickup-total" id="pickup-total"></div>
     </div>
-    <div class="pickup-desk">📍 Head to MAIN DESK and make your payment</div>
-    <button class="pickup-close" onclick="closePickup()">OK, I'M COMING! 🏃</button>
+    <div class="pickup-desk">📍 Your payment is verified — head to MAIN DESK to collect!</div>
+    <button class="pickup-close" onclick="closePickup()">ON MY WAY! 🏃</button>
+  </div>
+</div>
+
+
+<!-- PAYMENT MODAL — shown after placing order, before confirming -->
+<div class="payment-modal-bg" id="payment-modal">
+  <div class="payment-card">
+    <div class="payment-header">
+      <div class="payment-header-icon">💳</div>
+      <div>
+        <div class="payment-header-title">COMPLETE PAYMENT</div>
+        <div class="payment-header-sub">Scan QR · Pay · Upload screenshot</div>
+      </div>
+    </div>
+    <div class="payment-body">
+
+      <!-- Bill summary -->
+      <div class="pay-bill">
+        <div class="pay-bill-title">📋 YOUR ORDER</div>
+        <div id="pay-bill-items"></div>
+        <div class="pay-bill-total">
+          <span>TOTAL</span><span id="pay-bill-total">₹0</span>
+        </div>
+      </div>
+
+      <!-- QR Code -->
+      <div class="qr-section">
+        <div class="qr-label">📲 SCAN TO PAY · UPI</div>
+        <div class="qr-img-wrap" id="pay-qr-wrap">
+          <div class="qr-placeholder">
+            <div class="qr-placeholder-icon">📱</div>
+            <div class="qr-placeholder-text">QR not set yet.<br>Ask outlet to upload.</div>
+          </div>
+        </div>
+        <div class="qr-compress-note">
+          📎 After paying, upload your payment screenshot below.<br>
+          <strong>Upload compressed screenshot in case of issue in uploading.</strong>
+        </div>
+      </div>
+
+      <!-- Screenshot upload -->
+      <div class="ss-section">
+        <div class="ss-label">📸 PAYMENT SCREENSHOT</div>
+        <div class="ss-upload-area" id="ss-upload-area">
+          <input type="file" accept="image/*" id="ss-file-input" onchange="handleScreenshotSelect(event)">
+          <span class="ss-upload-icon">📤</span>
+          <div class="ss-upload-text">Tap to upload screenshot</div>
+          <div class="ss-upload-hint">JPG / PNG · Max ~800KB recommended</div>
+        </div>
+        <div class="ss-preview" id="ss-preview">
+          <img id="ss-preview-img" src="" alt="Screenshot preview">
+          <button class="ss-preview-remove" onclick="removeScreenshot()">✕</button>
+        </div>
+        <div class="ss-size-warning" id="ss-size-warning">
+          ⚠️ Image is large — please compress it to avoid upload failure.
+        </div>
+      </div>
+
+      <button class="pay-submit-btn" id="pay-submit-btn" onclick="submitPaymentAndOrder()" disabled>
+        📤 SUBMIT ORDER WITH PAYMENT
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- SCREENSHOT VIEWER MODAL (outlet side) -->
+<div class="ss-viewer-bg" id="ss-viewer">
+  <div class="ss-viewer-inner">
+    <div class="ss-viewer-header">
+      <div class="ss-viewer-title">📸 PAYMENT SCREENSHOT</div>
+      <button class="ss-viewer-close" onclick="closeSsViewer()">✕</button>
+    </div>
+    <img class="ss-viewer-img" id="ss-viewer-img" src="" alt="Payment screenshot">
+    <div class="ss-viewer-actions" id="ss-viewer-actions"></div>
   </div>
 </div>
 
@@ -1243,6 +1572,27 @@ input:checked + .toggle-slider:before{transform:translateX(20px);}
 
   <!-- STOCK MANAGEMENT PANEL -->
   <div class="outlet-panel" id="outlet-panel-stock" style="padding-bottom:40px;">
+
+    <!-- UPI QR Upload -->
+    <div class="qr-upload-section">
+      <div class="qr-upload-title">💳 UPI PAYMENT QR CODE</div>
+      <div class="qr-current">
+        <div class="qr-current-img" id="outlet-qr-display">
+          <div class="qr-no-img">📱</div>
+        </div>
+        <div>
+          <div style="font-size:.75rem;color:var(--cream);margin-bottom:6px;">
+            Students scan this QR to pay before order is confirmed.
+          </div>
+          <label class="qr-upload-btn">
+            📤 UPLOAD / CHANGE QR
+            <input type="file" accept="image/*" onchange="uploadOutletQR(event)">
+          </label>
+        </div>
+      </div>
+      <div class="qr-status" id="qr-upload-status"></div>
+    </div>
+
     <div class="stock-section-header">
       MENU AVAILABILITY
       <button class="stock-restore-btn" onclick="restoreAllStock()">↺ RESTORE ALL</button>
@@ -1457,6 +1807,11 @@ let outletUnsubscribe = null;
 let customerUnsubscribe = null;
 let stockUnsubscribe = null;
 let shownPickupIds = new Set(); // prevent duplicate popups
+let pendingOrderData = null;   // holds order data while payment modal is open
+let selectedScreenshotB64 = null; // base64 screenshot chosen by customer
+let currentSsViewerKey = null; // fbKey of order whose screenshot is being viewed
+let upiQrB64 = null;           // current UPI QR image (base64)
+let upiQrUnsubscribe = null;   // Firebase listener for QR updates
 
 /* ═════════════════════════════════════
    SCREEN NAVIGATION
@@ -1488,6 +1843,7 @@ function fbStockItemRef(id){ return ref(db, 'stock/' + id); }
 function fbSalesRef()         { return ref(db, 'salesHistory'); }
 function fbSalesDayRef(dayKey){ return ref(db, 'salesHistory/' + dayKey); }
 function fbCurrentDayRef()    { return ref(db, 'meta/currentDay'); }
+function fbUpiQrRef()         { return ref(db, 'meta/upiQR'); }
 
 // Convert Firebase snapshot to sorted orders array
 function snapshotToOrders(snap) {
@@ -1606,9 +1962,13 @@ function customerLogout() {
   currentUser = null;
   cart = {};
   orders = [];
+  pendingOrderData = null;
+  selectedScreenshotB64 = null;
   shownPickupIds.clear();
+  document.getElementById('payment-modal').classList.remove('show');
   if (customerUnsubscribe) { customerUnsubscribe(); customerUnsubscribe = null; }
   if (stockUnsubscribe)    { stockUnsubscribe();  stockUnsubscribe  = null; }
+  if (upiQrUnsubscribe)    { upiQrUnsubscribe();  upiQrUnsubscribe  = null; }
   stockStatus = {};
   document.getElementById('profile-dropdown').classList.remove('open');
   document.getElementById('reg-name').value  = '';
@@ -1640,12 +2000,17 @@ function subscribeCustomerOrders() {
     updateOrdersBadge();
     if (currentTab === 'orders') renderMyOrders();
     checkForReadyNotifications();
+    checkForPreparingNotifications();
   });
-  // Subscribe to stock changes so menu hides/shows instantly
   if (stockUnsubscribe) stockUnsubscribe();
   stockUnsubscribe = onValue(fbStockRef(), (snap) => {
     stockStatus = snap.exists() ? snap.val() : {};
-    buildMenu(); // rebuild menu with latest stock status
+    buildMenu();
+  });
+  // Always fetch latest UPI QR so payment modal shows it
+  if (upiQrUnsubscribe) upiQrUnsubscribe();
+  upiQrUnsubscribe = onValue(fbUpiQrRef(), (snap) => {
+    upiQrB64 = snap.exists() ? snap.val() : null;
   });
 }
 
@@ -1654,12 +2019,31 @@ function checkForReadyNotifications() {
   const myReady = orders.filter(o =>
     o.customer.uid === currentUser.uid &&
     o.status === 'ready' &&
-    !shownPickupIds.has(o.fbKey)
+    !shownPickupIds.has(o.fbKey + '_ready')
   );
   if (myReady.length > 0) {
-    shownPickupIds.add(myReady[0].fbKey);
+    shownPickupIds.add(myReady[0].fbKey + '_ready');
     showPickupBanner(myReady[0]);
   }
+}
+
+function checkForPreparingNotifications() {
+  if (!currentUser) return;
+  const myPreparing = orders.filter(o =>
+    o.customer.uid === currentUser.uid &&
+    o.status === 'preparing' &&
+    !shownPickupIds.has(o.fbKey + '_prep')
+  );
+  if (myPreparing.length > 0) {
+    shownPickupIds.add(myPreparing[0].fbKey + '_prep');
+    showPaymentVerifiedBanner(myPreparing[0]);
+  }
+}
+
+function showPaymentVerifiedBanner(order) {
+  showToast('💸 Payment verified! Your order is being prepared 👨‍🍳', '');
+  if (currentTab === 'orders') renderMyOrders();
+  updateOrdersBadge();
 }
 
 /* ═════════════════════════════════════
@@ -1678,8 +2062,9 @@ function doOutletLogin() {
 }
 
 function outletLogout() {
-  if (outletUnsubscribe) { outletUnsubscribe(); outletUnsubscribe = null; }
-  if (stockUnsubscribe)  { stockUnsubscribe();  stockUnsubscribe  = null; }
+  if (outletUnsubscribe)  { outletUnsubscribe();  outletUnsubscribe  = null; }
+  if (stockUnsubscribe)   { stockUnsubscribe();   stockUnsubscribe   = null; }
+  if (upiQrUnsubscribe)   { upiQrUnsubscribe();   upiQrUnsubscribe   = null; }
   orders = [];
   stockStatus = {};
   document.getElementById('outlet-user').value = '';
@@ -1696,11 +2081,20 @@ function subscribeOutletOrders() {
     orders = snapshotToOrders(snap);
     renderOutlet();
   });
-  // Subscribe to stock so outlet panel stays in sync
   if (stockUnsubscribe) stockUnsubscribe();
   stockUnsubscribe = onValue(fbStockRef(), (snap) => {
     stockStatus = snap.exists() ? snap.val() : {};
     renderStockMenu();
+  });
+  // Subscribe to UPI QR so outlet panel always shows current QR
+  if (upiQrUnsubscribe) upiQrUnsubscribe();
+  upiQrUnsubscribe = onValue(fbUpiQrRef(), (snap) => {
+    if (snap.exists()) {
+      const b64 = snap.val();
+      upiQrB64 = b64;
+      const el = document.getElementById('outlet-qr-display');
+      if (el) el.innerHTML = `<img src="${b64}" alt="UPI QR" style="width:64px;height:64px;object-fit:contain;">`;
+    }
   });
 }
 
@@ -1755,7 +2149,16 @@ function showCat(cat, btn) {
 function addToCart(id)       { cart[id]=(cart[id]||0)+1; updateQtyUI(id); updateCartUI(); }
 function changeQty(id, d)    { cart[id]=(cart[id]||0)+d; if(cart[id]<=0) delete cart[id]; updateQtyUI(id); updateCartUI(); }
 window.addToCart  = addToCart;
-window.markPayment = markPayment;
+window.verifyPayment       = verifyPayment;
+window.rejectPayment       = rejectPayment;
+window.notifyReady         = notifyReady;
+window.markDelivered       = markDelivered;
+window.openSsViewer        = openSsViewer;
+window.closeSsViewer       = closeSsViewer;
+window.uploadOutletQR      = uploadOutletQR;
+window.removeScreenshot    = removeScreenshot;
+window.handleScreenshotSelect = handleScreenshotSelect;
+window.submitPaymentAndOrder  = submitPaymentAndOrder;
 window.changeQty  = changeQty;
 
 function updateQtyUI(id) {
@@ -1801,14 +2204,9 @@ function updateNoteCount() {
 async function placeOrder() {
   if (!currentUser || getCount() === 0) return;
   const btn = document.getElementById('order-btn');
-  btn.disabled = true; btn.textContent = 'PLACING…';
+  btn.disabled = true; btn.textContent = 'LOADING…';
 
   try {
-    // Get next queue number atomically
-    const metaSnap = await get(fbQueueRef());
-    const qNum = (metaSnap.exists() ? metaSnap.val() : 0) + 1;
-    await set(fbQueueRef(), qNum);
-
     const orderItems = Object.entries(cart).map(([id,qty]) => {
       const i = MENU.find(m => m.id === id);
       return { id, name: i.name, price: i.price, qty };
@@ -1816,21 +2214,105 @@ async function placeOrder() {
     const total = getTotal();
     const note  = (document.getElementById('order-note').value || '').trim();
 
+    // Store order data temporarily — will push to Firebase after payment
+    pendingOrderData = { orderItems, total, note };
+
+    // Populate payment modal bill
+    document.getElementById('pay-bill-items').innerHTML =
+      orderItems.map(i => `<div class="pay-bill-item"><span>${i.name} × ${i.qty}</span><span>₹${i.price*i.qty}</span></div>`).join('');
+    document.getElementById('pay-bill-total').textContent = '₹' + total;
+
+    // Show current QR if available
+    const qrWrap = document.getElementById('pay-qr-wrap');
+    if (upiQrB64) {
+      qrWrap.innerHTML = `<img src="${upiQrB64}" alt="UPI QR" style="width:150px;height:150px;object-fit:contain;">`;
+    } else {
+      qrWrap.innerHTML = `<div class="qr-placeholder"><div class="qr-placeholder-icon">📱</div><div class="qr-placeholder-text">QR not set yet.<br>Ask outlet to upload.</div></div>`;
+    }
+
+    // Reset screenshot state
+    selectedScreenshotB64 = null;
+    document.getElementById('ss-preview').classList.remove('show');
+    document.getElementById('ss-preview-img').src = '';
+    document.getElementById('ss-file-input').value = '';
+    document.getElementById('ss-size-warning').style.display = 'none';
+    document.getElementById('pay-submit-btn').disabled = true;
+
+    closeCart();
+    document.getElementById('payment-modal').classList.add('show');
+
+  } catch(err) {
+    alert('Failed to open payment. Check your internet connection.');
+    console.error(err);
+  } finally {
+    btn.disabled = false; btn.textContent = 'PLACE ORDER →';
+  }
+}
+
+/* ═════════════════════════════════════
+   SCREENSHOT SELECTION
+═════════════════════════════════════ */
+function handleScreenshotSelect(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const sizeKB = file.size / 1024;
+  const sizeWarn = document.getElementById('ss-size-warning');
+  sizeWarn.style.display = sizeKB > 800 ? 'block' : 'none';
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    selectedScreenshotB64 = e.target.result; // full data URL
+    document.getElementById('ss-preview-img').src = selectedScreenshotB64;
+    document.getElementById('ss-preview').classList.add('show');
+    document.getElementById('pay-submit-btn').disabled = false;
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeScreenshot() {
+  selectedScreenshotB64 = null;
+  document.getElementById('ss-preview').classList.remove('show');
+  document.getElementById('ss-preview-img').src = '';
+  document.getElementById('ss-file-input').value = '';
+  document.getElementById('ss-size-warning').style.display = 'none';
+  document.getElementById('pay-submit-btn').disabled = true;
+}
+
+/* ═════════════════════════════════════
+   SUBMIT ORDER WITH PAYMENT SCREENSHOT
+═════════════════════════════════════ */
+async function submitPaymentAndOrder() {
+  if (!pendingOrderData || !selectedScreenshotB64) return;
+  const btn = document.getElementById('pay-submit-btn');
+  btn.disabled = true; btn.textContent = '⏳ SUBMITTING…';
+
+  try {
+    // Get next queue number
+    const metaSnap = await get(fbQueueRef());
+    const qNum = (metaSnap.exists() ? metaSnap.val() : 0) + 1;
+    await set(fbQueueRef(), qNum);
+
+    const { orderItems, total, note } = pendingOrderData;
+
     const orderData = {
-      queueNum : qNum,
-      items    : orderItems,
+      queueNum       : qNum,
+      items          : orderItems,
       total,
-      note     : note || '',
-      status   : 'pending',
-      timeMs   : Date.now(),
-      customer : { ...currentUser }
+      note           : note || '',
+      status         : 'payment_uploaded',
+      timeMs         : Date.now(),
+      customer       : { ...currentUser },
+      paymentSS      : selectedScreenshotB64,  // base64 screenshot
+      paymentUploadedAt: Date.now()
     };
 
-    // Push to Firebase — all devices see it instantly
     const newRef = push(fbOrdersRef());
     await set(newRef, orderData);
 
-    // Show ticket
+    // Close payment modal & show ticket
+    document.getElementById('payment-modal').classList.remove('show');
+
     document.getElementById('t-num').textContent   = String(qNum).padStart(2,'0');
     document.getElementById('t-cname').textContent = currentUser.name + ' · ' + currentUser.uid;
     document.getElementById('t-items').innerHTML   = orderItems.map(i=>`${i.name} × ${i.qty} — ₹${i.price*i.qty}`).join('<br>');
@@ -1840,18 +2322,19 @@ async function placeOrder() {
     else      { noteBox.innerHTML=''; noteBox.style.display='none'; }
     document.getElementById('ticket-modal').classList.add('show');
 
-    // Clear cart & note
+    // Clear cart
     document.getElementById('order-note').value = '';
     document.getElementById('note-char-count').textContent = '0';
     Object.keys(cart).forEach(id => { delete cart[id]; updateQtyUI(id); });
-    closeCart();
     updateCartUI();
+    pendingOrderData = null;
+    selectedScreenshotB64 = null;
 
   } catch(err) {
-    alert('Failed to place order. Check your internet connection and try again.');
+    alert('Failed to submit order. Your screenshot may be too large — please compress it and try again.');
     console.error(err);
-  } finally {
-    btn.disabled = false; btn.textContent = 'PLACE ORDER →';
+    btn.disabled = false;
+    btn.textContent = '📤 SUBMIT ORDER WITH PAYMENT';
   }
 }
 
@@ -1864,17 +2347,18 @@ function closeTicket() {
    OUTLET RENDER
 ═════════════════════════════════════ */
 function renderOutlet() {
-  const pending = orders.filter(o => o.status === 'pending').length;
-  const ready   = orders.filter(o => o.status === 'ready').length;
-  const paid = orders.filter(o => o.paid).length;
+  const needAction = orders.filter(o => o.status === 'payment_uploaded').length;
+  const preparing  = orders.filter(o => o.status === 'preparing').length;
+  const ready      = orders.filter(o => o.status === 'ready').length;
+  const paid       = orders.filter(o => o.paid).length;
   document.getElementById('stat-total').textContent   = orders.length;
-  document.getElementById('stat-pending').textContent = pending;
+  document.getElementById('stat-pending').textContent = needAction + preparing;
   document.getElementById('stat-ready').textContent   = ready;
   const paidEl = document.getElementById('stat-paid');
   if (paidEl) paidEl.textContent = paid;
-  // Update pending orders badge on tab
+  // Badge shows how many need action (payment to verify)
   const pb = document.getElementById('outlet-pending-badge');
-  if (pb) { pb.textContent = pending; pb.classList.toggle('show', pending > 0); }
+  if (pb) { pb.textContent = needAction; pb.classList.toggle('show', needAction > 0); }
 
   const c = document.getElementById('orders-container');
   if (orders.length === 0) {
@@ -1888,39 +2372,32 @@ function renderOutlet() {
 
     // Status badge
     let bc, bt;
-    if (o.status === 'pending')     { bc = 'badge-pending';   bt = '⏳ PENDING'; }
-    else if (o.status === 'ready')  { bc = 'badge-ready';     bt = '✅ READY'; }
-    else                            { bc = 'badge-paid';      bt = '💸 PAID'; }
+    if      (o.status === 'payment_uploaded') { bc = 'badge-payment-uploaded'; bt = '📸 VERIFY PAYMENT'; }
+    else if (o.status === 'preparing')        { bc = 'badge-preparing';        bt = '👨‍🍳 PREPARING'; }
+    else if (o.status === 'ready')            { bc = 'badge-ready';            bt = '✅ READY'; }
+    else if (o.status === 'delivered')        { bc = 'badge-delivered';        bt = '📦 DELIVERED'; }
+    else                                      { bc = 'badge-pending';          bt = '⏳ PENDING'; }
 
-    // Action button row
+    // Action buttons
     let actionBtn;
-    if (o.status === 'pending') {
-      actionBtn = `<button class="notify-btn btn-notify" onclick="notifyCustomer('${o.fbKey}')">🔔 NOTIFY READY</button>`;
+    if (o.status === 'payment_uploaded') {
+      actionBtn = `<button class="notify-btn btn-view-screenshot" onclick="openSsViewer('${o.fbKey}')">📸 VIEW & VERIFY PAYMENT</button>`;
+    } else if (o.status === 'preparing') {
+      actionBtn = `<button class="notify-btn btn-notify-ready-prep" onclick="notifyReady('${o.fbKey}')">🔔 NOTIFY ORDER READY</button>`;
     } else if (o.status === 'ready') {
-      // Student has been notified — waiting for them to come & pay
-      actionBtn = `
-        <div style="display:flex;gap:6px;flex:1;justify-content:flex-end;align-items:center;">
-          <button class="notify-btn btn-notified" style="flex:0 0 auto;">✅ NOTIFIED</button>
-          <button class="notify-btn btn-pay" onclick="markPayment('${o.fbKey}')">💸 PAYMENT RECEIVED</button>
-        </div>`;
+      actionBtn = `<button class="notify-btn btn-mark-delivered" onclick="markDelivered('${o.fbKey}')">📦 MARK DELIVERED</button>`;
+    } else if (o.status === 'delivered') {
+      actionBtn = `<button class="notify-btn btn-paid">✅ DELIVERED</button>`;
     } else {
-      // collected (always paid in new flow)
-      actionBtn = `<button class="notify-btn btn-paid">💸 PAID & COLLECTED</button>`;
+      actionBtn = `<button class="notify-btn btn-notified" style="cursor:default;">⏳ Awaiting Payment</button>`;
     }
 
-    // Payment pill: shown only on ready orders (awaiting payment)
-    const payPill = (o.status === 'ready')
-      ? `<span class="pay-pill unpaid">💳 AWAITING PAYMENT</span>`
-      : (o.status === 'collected')
-      ? `<span class="pay-pill paid">💸 PAID</span>`
-      : '';
-
-    return `<div class="order-card status-${o.status}${o.paid ? ' status-paid' : ''}">
+    return `<div class="order-card status-${o.status}">
       <div class="oc-header">
         <div class="oc-left">
           <div class="oc-num">#${String(o.queueNum).padStart(2,'0')}</div>
           <div class="oc-meta">
-            <div class="oc-cname">${o.customer.name}${payPill}</div>
+            <div class="oc-cname">${o.customer.name}</div>
             <div class="oc-uid">${o.customer.uid}</div>
             <div class="oc-time">📱 +91 ${o.customer.phone} · ${t}</div>
           </div>
@@ -1939,27 +2416,98 @@ function renderOutlet() {
 /* ═════════════════════════════════════
    NOTIFY CUSTOMER  →  updates Firebase
 ═════════════════════════════════════ */
-async function notifyCustomer(fbKey) {
+/* ═════════════════════════════════════
+   OUTLET ACTION FUNCTIONS — NEW FLOW
+   payment_uploaded → preparing → ready → delivered
+═════════════════════════════════════ */
+
+// Called when outlet views screenshot and clicks "Verify"
+async function verifyPayment(fbKey) {
+  try {
+    await update(fbOrderRef(fbKey), { status: 'preparing', paid: true, paidAt: Date.now() });
+    showToast('✅ Payment verified! Customer notified.', 'outlet');
+    closeSsViewer();
+  } catch(e) {
+    alert('Failed to verify payment. Check connection.');
+    console.error(e);
+  }
+}
+
+// Called when outlet rejects the screenshot
+async function rejectPayment(fbKey) {
+  if (!confirm('Reject this payment screenshot? Customer will be asked to re-upload.')) return;
+  try {
+    await update(fbOrderRef(fbKey), { status: 'payment_rejected', paymentSS: null });
+    showToast('❌ Payment rejected. Customer notified.', 'outlet');
+    closeSsViewer();
+  } catch(e) {
+    alert('Failed to reject payment. Check connection.');
+  }
+}
+
+// Called when food is ready — notify customer
+async function notifyReady(fbKey) {
   try {
     await update(fbOrderRef(fbKey), { status: 'ready' });
-    showToast(`🔔 Order marked ready!`, 'outlet');
+    showToast('🔔 Customer notified — order ready!', 'outlet');
   } catch(e) {
-    alert('Failed to update order. Check connection.');
+    alert('Failed to notify. Check connection.');
+  }
+}
+
+// Called when customer collects order
+async function markDelivered(fbKey) {
+  try {
+    await update(fbOrderRef(fbKey), { status: 'delivered', deliveredAt: Date.now() });
+    showToast('📦 Order marked as delivered!', 'outlet');
+  } catch(e) {
+    alert('Failed to mark delivered. Check connection.');
   }
 }
 
 /* ═════════════════════════════════════
-   MARK PAYMENT RECEIVED  →  Firebase
+   SCREENSHOT VIEWER (outlet)
 ═════════════════════════════════════ */
-async function markPayment(fbKey) {
-  try {
-    // Single action: mark payment received AND collected — order is fully done
-    await update(fbOrderRef(fbKey), { status: 'collected', paid: true, paidAt: Date.now() });
-    showToast('💸 Payment received — order collected!', 'outlet');
-  } catch(e) {
-    alert('Failed to mark payment. Check connection.');
-    console.error(e);
-  }
+function openSsViewer(fbKey) {
+  const order = orders.find(o => o.fbKey === fbKey);
+  if (!order || !order.paymentSS) { alert('No screenshot found for this order.'); return; }
+  currentSsViewerKey = fbKey;
+  document.getElementById('ss-viewer-img').src = order.paymentSS;
+  document.getElementById('ss-viewer-actions').innerHTML = `
+    <button class="btn-verify-pay" onclick="verifyPayment('${fbKey}')">✅ PAYMENT VERIFIED — START PREPARING</button>
+    <button class="btn-reject-pay" onclick="rejectPayment('${fbKey}')">❌ REJECT</button>
+  `;
+  document.getElementById('ss-viewer').classList.add('show');
+}
+
+function closeSsViewer() {
+  document.getElementById('ss-viewer').classList.remove('show');
+  document.getElementById('ss-viewer-img').src = '';
+  currentSsViewerKey = null;
+}
+
+/* ═════════════════════════════════════
+   OUTLET QR UPLOAD
+═════════════════════════════════════ */
+async function uploadOutletQR(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const statusEl = document.getElementById('qr-upload-status');
+  statusEl.textContent = '⏳ Uploading…';
+
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const b64 = e.target.result;
+    try {
+      await set(fbUpiQrRef(), b64);
+      statusEl.textContent = '✅ QR uploaded successfully!';
+      showToast('✅ UPI QR updated!', 'outlet');
+    } catch(err) {
+      statusEl.textContent = '❌ Upload failed — image may be too large.';
+      console.error(err);
+    }
+  };
+  reader.readAsDataURL(file);
 }
 
 /* ═════════════════════════════════════
@@ -2002,8 +2550,8 @@ function switchTab(tab) {
 function renderMyOrders() {
   if (!currentUser) return;
   const myOrders = orders.filter(o => o.customer.uid === currentUser.uid);
-  const active   = myOrders.filter(o => o.status !== 'collected');
-  const past     = myOrders.filter(o => o.status === 'collected');
+  const active   = myOrders.filter(o => o.status !== 'delivered');
+  const past     = myOrders.filter(o => o.status === 'delivered');
 
   const emptyEl       = document.getElementById('orders-empty-state');
   const activeSection = document.getElementById('active-orders-section');
@@ -2031,15 +2579,22 @@ function buildOrderCard(o) {
   const d = new Date(o.timeMs);
   const t = d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
   const ds = d.toLocaleDateString([],{day:'numeric',month:'short'});
-  const stClass   = o.status==='pending' ? 'st-pending' : o.status==='ready' ? 'st-ready' : 'st-collected';
-  const badgeText = o.status==='pending' ? '⏳ Preparing'
-                  : o.status==='ready'   ? '✅ Ready — Head to counter!'
-                  :                        '💸 Paid & Collected';
-  const footer    = o.status==='ready'
-    ? `<div class="moc-collect-note">📍 Head to MAIN DESK · Make payment to collect</div>`
-    : o.status==='collected'
-    ? `<div class="moc-done-note">✅ Paid & collected · ${ds} at ${t}</div>`
-    : `<div class="moc-done-note">Placed · ${ds} at ${t}</div>`;
+  const stClass = ['ready','preparing','payment_uploaded'].includes(o.status) ? 'st-ready'
+                : o.status === 'delivered' ? 'st-collected' : 'st-pending';
+  const badgeText =
+      o.status === 'payment_uploaded'  ? '📸 Payment Sent — Verifying'
+    : o.status === 'payment_rejected'  ? '❌ Payment Rejected — Re-upload'
+    : o.status === 'preparing'         ? '👨‍🍳 Payment Verified! Preparing…'
+    : o.status === 'ready'             ? '✅ Ready — Head to Counter!'
+    : o.status === 'delivered'         ? '📦 Delivered & Done'
+    :                                    '⏳ Awaiting Payment Verification';
+  const footer =
+      o.status === 'payment_uploaded'  ? `<div class="moc-collect-note" style="color:#c084fc;">⏳ Outlet is verifying your payment</div>`
+    : o.status === 'payment_rejected'  ? `<div class="moc-collect-note" style="color:#f87171;">❌ Rejected — please re-upload screenshot</div>`
+    : o.status === 'preparing'         ? `<div class="moc-collect-note">👨‍🍳 Your order is being prepared!</div>`
+    : o.status === 'ready'             ? `<div class="moc-collect-note">📍 Come to MAIN DESK to collect your order</div>`
+    : o.status === 'delivered'         ? `<div class="moc-done-note">✅ Collected · ${ds} at ${t}</div>`
+    :                                    `<div class="moc-done-note">Placed · ${ds} at ${t}</div>`;
   return `<div class="my-order-card ${stClass}">
     <div class="moc-top">
       <div class="moc-left">
@@ -2067,7 +2622,7 @@ function updateOrdersBadge() {
   if (!currentUser) return;
   const badge = document.getElementById('orders-tab-badge');
   if (!badge) return;
-  const n = orders.filter(o => o.customer.uid === currentUser.uid && o.status !== 'collected').length;
+  const n = orders.filter(o => o.customer.uid === currentUser.uid && o.status !== 'delivered').length;
   badge.textContent = n;
   badge.classList.toggle('show', n > 0);
 }
