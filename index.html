@@ -1193,8 +1193,8 @@ input:checked + .toggle-slider:before{transform:translateX(20px);}
       <div class="pickup-bill-items" id="pickup-bill-items"></div>
       <div class="pickup-total" id="pickup-total"></div>
     </div>
-    <div class="pickup-desk">📍 Collect from MAIN DESK</div>
-    <button class="pickup-close" onclick="closePickup()">COLLECT ORDER ✓</button>
+    <div class="pickup-desk">📍 Head to MAIN DESK and make your payment</div>
+    <button class="pickup-close" onclick="closePickup()">OK, I'M COMING! 🏃</button>
   </div>
 </div>
 
@@ -1886,33 +1886,33 @@ function renderOutlet() {
     const t = new Date(o.timeMs).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
     const items = o.items.map(i=>`${i.name} × ${i.qty}`).join(' · ');
 
-    // Status badge — paid overrides collected label
+    // Status badge
     let bc, bt;
-    if (o.status === 'pending')   { bc = 'badge-pending';   bt = '⏳ PENDING'; }
-    else if (o.status === 'ready' && !o.paid) { bc = 'badge-ready'; bt = '✅ READY'; }
-    else if (o.status === 'ready' && o.paid)  { bc = 'badge-paid';  bt = '💸 PAID'; }
-    else if (o.status === 'collected' && !o.paid) { bc = 'badge-collected'; bt = '📦 COLLECTED'; }
-    else  { bc = 'badge-paid'; bt = '💸 PAID & COLLECTED'; }
+    if (o.status === 'pending')     { bc = 'badge-pending';   bt = '⏳ PENDING'; }
+    else if (o.status === 'ready')  { bc = 'badge-ready';     bt = '✅ READY'; }
+    else                            { bc = 'badge-paid';      bt = '💸 PAID'; }
 
     // Action button row
     let actionBtn;
     if (o.status === 'pending') {
       actionBtn = `<button class="notify-btn btn-notify" onclick="notifyCustomer('${o.fbKey}')">🔔 NOTIFY READY</button>`;
-    } else if (o.status === 'ready' && !o.paid) {
+    } else if (o.status === 'ready') {
+      // Student has been notified — waiting for them to come & pay
       actionBtn = `
-        <div style="display:flex;gap:6px;flex:1;justify-content:flex-end;">
+        <div style="display:flex;gap:6px;flex:1;justify-content:flex-end;align-items:center;">
           <button class="notify-btn btn-notified" style="flex:0 0 auto;">✅ NOTIFIED</button>
           <button class="notify-btn btn-pay" onclick="markPayment('${o.fbKey}')">💸 PAYMENT RECEIVED</button>
         </div>`;
-    } else if (o.paid) {
-      actionBtn = `<button class="notify-btn btn-paid">💸 PAYMENT RECEIVED</button>`;
     } else {
-      actionBtn = `<button class="notify-btn btn-collected">📦 COLLECTED</button>`;
+      // collected (always paid in new flow)
+      actionBtn = `<button class="notify-btn btn-paid">💸 PAID & COLLECTED</button>`;
     }
 
-    // Payment pill shown on card
-    const payPill = (o.status !== 'pending')
-      ? `<span class="pay-pill ${o.paid ? 'paid' : 'unpaid'}">${o.paid ? '💸 PAID' : '💳 UNPAID'}</span>`
+    // Payment pill: shown only on ready orders (awaiting payment)
+    const payPill = (o.status === 'ready')
+      ? `<span class="pay-pill unpaid">💳 AWAITING PAYMENT</span>`
+      : (o.status === 'collected')
+      ? `<span class="pay-pill paid">💸 PAID</span>`
       : '';
 
     return `<div class="order-card status-${o.status}${o.paid ? ' status-paid' : ''}">
@@ -1953,8 +1953,9 @@ async function notifyCustomer(fbKey) {
 ═════════════════════════════════════ */
 async function markPayment(fbKey) {
   try {
-    await update(fbOrderRef(fbKey), { paid: true, paidAt: Date.now() });
-    showToast('💸 Payment received!', 'outlet');
+    // Single action: mark payment received AND collected — order is fully done
+    await update(fbOrderRef(fbKey), { status: 'collected', paid: true, paidAt: Date.now() });
+    showToast('💸 Payment received — order collected!', 'outlet');
   } catch(e) {
     alert('Failed to mark payment. Check connection.');
     console.error(e);
@@ -1975,14 +1976,11 @@ function showPickupBanner(order) {
   renderMyOrders();
 }
 
-async function closePickup() {
+function closePickup() {
+  // Student just dismisses the popup — status stays 'ready'
+  // Manager will mark Payment Received which sets status → collected
   document.getElementById('pickup-modal').classList.remove('show');
-  if (pendingPickupOrder && pendingPickupOrder.fbKey) {
-    try {
-      await update(fbOrderRef(pendingPickupOrder.fbKey), { status: 'collected' });
-    } catch(e) { console.error('closePickup error', e); }
-    pendingPickupOrder = null;
-  }
+  pendingPickupOrder = null;
 }
 
 /* ═════════════════════════════════════
@@ -2034,11 +2032,13 @@ function buildOrderCard(o) {
   const t = d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
   const ds = d.toLocaleDateString([],{day:'numeric',month:'short'});
   const stClass   = o.status==='pending' ? 'st-pending' : o.status==='ready' ? 'st-ready' : 'st-collected';
-  const badgeText = o.status==='pending' ? '⏳ Preparing' : o.status==='ready' ? '✅ Ready to Collect!' : '📦 Collected';
+  const badgeText = o.status==='pending' ? '⏳ Preparing'
+                  : o.status==='ready'   ? '✅ Ready — Head to counter!'
+                  :                        '💸 Paid & Collected';
   const footer    = o.status==='ready'
-    ? `<div class="moc-collect-note">📍 Collect from MAIN DESK now!</div>`
+    ? `<div class="moc-collect-note">📍 Head to MAIN DESK · Make payment to collect</div>`
     : o.status==='collected'
-    ? `<div class="moc-done-note">Collected · ${ds} ${t}</div>`
+    ? `<div class="moc-done-note">✅ Paid & collected · ${ds} at ${t}</div>`
     : `<div class="moc-done-note">Placed · ${ds} at ${t}</div>`;
   return `<div class="my-order-card ${stClass}">
     <div class="moc-top">
