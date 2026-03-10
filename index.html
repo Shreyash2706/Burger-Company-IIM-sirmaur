@@ -703,6 +703,39 @@ input:checked + .toggle-slider:before{transform:translateX(20px);}
 }
 .past-day-body.open{display:block;}
 
+
+/* ── PAYMENT BUTTON & BADGE ── */
+.btn-pay{
+  background:linear-gradient(135deg,#16a34a,#15803d);
+  color:#fff;border:none;cursor:pointer;
+  font-size:.68rem;font-weight:700;letter-spacing:1px;
+  font-family:'Space Mono',monospace;
+}
+.btn-pay:hover{opacity:.85;}
+.btn-paid{
+  background:rgba(22,163,74,.15);
+  color:#4ade80;border:1px solid rgba(22,163,74,.3);
+  cursor:default;font-size:.68rem;font-weight:700;
+  letter-spacing:1px;font-family:'Space Mono',monospace;
+}
+.badge-paid{
+  background:rgba(22,163,74,.18);
+  color:#4ade80;border:1px solid rgba(22,163,74,.35);
+}
+.badge-ready-unpaid{
+  background:rgba(245,166,35,.18);
+  color:var(--gold);border:1px solid rgba(245,166,35,.35);
+}
+/* Payment pill on order card */
+.pay-pill{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:.62rem;font-weight:700;letter-spacing:1px;
+  font-family:'Space Mono',monospace;
+  padding:3px 8px;border-radius:20px;margin-left:6px;
+}
+.pay-pill.unpaid{background:rgba(232,50,10,.12);color:#f87171;border:1px solid rgba(232,50,10,.3);}
+.pay-pill.paid{background:rgba(22,163,74,.15);color:#4ade80;border:1px solid rgba(22,163,74,.3);}
+
 /* scrollbar */
 ::-webkit-scrollbar{width:3px;}
 ::-webkit-scrollbar-track{background:var(--char);}
@@ -1201,6 +1234,7 @@ input:checked + .toggle-slider:before{transform:translateX(20px);}
       <div class="stat-box"><div class="stat-n" id="stat-total">0</div><div class="stat-l">TOTAL</div></div>
       <div class="stat-box"><div class="stat-n" id="stat-pending">0</div><div class="stat-l">PENDING</div></div>
       <div class="stat-box"><div class="stat-n" id="stat-ready">0</div><div class="stat-l">READY</div></div>
+      <div class="stat-box" style="border-color:rgba(74,222,128,.25);"><div class="stat-n" id="stat-paid" style="color:#4ade80;">0</div><div class="stat-l">PAID</div></div>
     </div>
     <div class="orders-container" id="orders-container">
       <div class="empty-queue"><div class="eq-icon">📭</div><p>No orders yet.<br>Waiting for students to order.</p></div>
@@ -1721,6 +1755,7 @@ function showCat(cat, btn) {
 function addToCart(id)       { cart[id]=(cart[id]||0)+1; updateQtyUI(id); updateCartUI(); }
 function changeQty(id, d)    { cart[id]=(cart[id]||0)+d; if(cart[id]<=0) delete cart[id]; updateQtyUI(id); updateCartUI(); }
 window.addToCart  = addToCart;
+window.markPayment = markPayment;
 window.changeQty  = changeQty;
 
 function updateQtyUI(id) {
@@ -1831,9 +1866,12 @@ function closeTicket() {
 function renderOutlet() {
   const pending = orders.filter(o => o.status === 'pending').length;
   const ready   = orders.filter(o => o.status === 'ready').length;
+  const paid = orders.filter(o => o.paid).length;
   document.getElementById('stat-total').textContent   = orders.length;
   document.getElementById('stat-pending').textContent = pending;
   document.getElementById('stat-ready').textContent   = ready;
+  const paidEl = document.getElementById('stat-paid');
+  if (paidEl) paidEl.textContent = paid;
   // Update pending orders badge on tab
   const pb = document.getElementById('outlet-pending-badge');
   if (pb) { pb.textContent = pending; pb.classList.toggle('show', pending > 0); }
@@ -1847,21 +1885,42 @@ function renderOutlet() {
   c.innerHTML = [...orders].reverse().map(o => {
     const t = new Date(o.timeMs).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
     const items = o.items.map(i=>`${i.name} × ${i.qty}`).join(' · ');
-    const [bc,bt] = o.status==='pending' ? ['badge-pending','⏳ PENDING']
-                  : o.status==='ready'   ? ['badge-ready','✅ READY']
-                  :                        ['badge-collected','📦 COLLECTED'];
-    const btn = o.status === 'pending'
-      ? `<button class="notify-btn btn-notify" onclick="notifyCustomer('${o.fbKey}')">🔔 NOTIFY READY</button>`
-      : o.status === 'ready'
-      ? `<button class="notify-btn btn-notified">✅ NOTIFIED</button>`
-      : `<button class="notify-btn btn-collected">📦 COLLECTED</button>`;
 
-    return `<div class="order-card status-${o.status}">
+    // Status badge — paid overrides collected label
+    let bc, bt;
+    if (o.status === 'pending')   { bc = 'badge-pending';   bt = '⏳ PENDING'; }
+    else if (o.status === 'ready' && !o.paid) { bc = 'badge-ready'; bt = '✅ READY'; }
+    else if (o.status === 'ready' && o.paid)  { bc = 'badge-paid';  bt = '💸 PAID'; }
+    else if (o.status === 'collected' && !o.paid) { bc = 'badge-collected'; bt = '📦 COLLECTED'; }
+    else  { bc = 'badge-paid'; bt = '💸 PAID & COLLECTED'; }
+
+    // Action button row
+    let actionBtn;
+    if (o.status === 'pending') {
+      actionBtn = `<button class="notify-btn btn-notify" onclick="notifyCustomer('${o.fbKey}')">🔔 NOTIFY READY</button>`;
+    } else if (o.status === 'ready' && !o.paid) {
+      actionBtn = `
+        <div style="display:flex;gap:6px;flex:1;justify-content:flex-end;">
+          <button class="notify-btn btn-notified" style="flex:0 0 auto;">✅ NOTIFIED</button>
+          <button class="notify-btn btn-pay" onclick="markPayment('${o.fbKey}')">💸 PAYMENT RECEIVED</button>
+        </div>`;
+    } else if (o.paid) {
+      actionBtn = `<button class="notify-btn btn-paid">💸 PAYMENT RECEIVED</button>`;
+    } else {
+      actionBtn = `<button class="notify-btn btn-collected">📦 COLLECTED</button>`;
+    }
+
+    // Payment pill shown on card
+    const payPill = (o.status !== 'pending')
+      ? `<span class="pay-pill ${o.paid ? 'paid' : 'unpaid'}">${o.paid ? '💸 PAID' : '💳 UNPAID'}</span>`
+      : '';
+
+    return `<div class="order-card status-${o.status}${o.paid ? ' status-paid' : ''}">
       <div class="oc-header">
         <div class="oc-left">
           <div class="oc-num">#${String(o.queueNum).padStart(2,'0')}</div>
           <div class="oc-meta">
-            <div class="oc-cname">${o.customer.name}</div>
+            <div class="oc-cname">${o.customer.name}${payPill}</div>
             <div class="oc-uid">${o.customer.uid}</div>
             <div class="oc-time">📱 +91 ${o.customer.phone} · ${t}</div>
           </div>
@@ -1871,7 +1930,7 @@ function renderOutlet() {
       <div class="oc-items">${items}</div>
       ${o.note ? `<div class="oc-note"><strong>📝 CUSTOMER NOTE</strong>${o.note}</div>` : ''}
       <div class="oc-footer">
-        <div class="oc-total">₹${o.total}</div>${btn}
+        <div class="oc-total">₹${o.total}</div>${actionBtn}
       </div>
     </div>`;
   }).join('');
@@ -1886,6 +1945,19 @@ async function notifyCustomer(fbKey) {
     showToast(`🔔 Order marked ready!`, 'outlet');
   } catch(e) {
     alert('Failed to update order. Check connection.');
+  }
+}
+
+/* ═════════════════════════════════════
+   MARK PAYMENT RECEIVED  →  Firebase
+═════════════════════════════════════ */
+async function markPayment(fbKey) {
+  try {
+    await update(fbOrderRef(fbKey), { paid: true, paidAt: Date.now() });
+    showToast('💸 Payment received!', 'outlet');
+  } catch(e) {
+    alert('Failed to mark payment. Check connection.');
+    console.error(e);
   }
 }
 
