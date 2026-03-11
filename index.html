@@ -1893,8 +1893,11 @@ async function doRegister() {
   const uid  = generateUID(name);
   const user = { uid, name, phone };
 
-  // Save to Firebase
+  // Save to Firebase (for uniqueness checks across all devices)
   await set(fbUserRef(phone), user);
+
+  // Save to this device's local storage (for quick sign-in)
+  saveDeviceUser(user);
 
   currentUser = user;
   document.getElementById('new-uid-display').textContent = uid;
@@ -1902,23 +1905,53 @@ async function doRegister() {
   showCAuth('cauth-success');
 }
 
-async function loadSavedUsers() {
+/* ═════════════════════════════════════
+   DEVICE-LOCAL USER STORAGE
+   Saved accounts are per-device (localStorage)
+   Firebase is only used for uniqueness check & data fetch
+═════════════════════════════════════ */
+function getDeviceUsers() {
+  try { return JSON.parse(localStorage.getItem('bc_device_users') || '[]'); }
+  catch(e) { return []; }
+}
+function saveDeviceUser(user) {
+  const users = getDeviceUsers().filter(u => u.phone !== user.phone); // dedup
+  users.unshift(user); // most recent first
+  localStorage.setItem('bc_device_users', JSON.stringify(users.slice(0, 10))); // keep max 10
+}
+function removeDeviceUser(phone) {
+  const users = getDeviceUsers().filter(u => u.phone !== phone);
+  localStorage.setItem('bc_device_users', JSON.stringify(users));
+}
+
+function loadSavedUsers() {
   const list = document.getElementById('saved-users-list');
-  list.innerHTML = '<div style="color:var(--ash);font-size:.75rem;padding:8px 0;">Loading…</div>';
-  try {
-    const snap = await get(fbUsersRef());
-    if (!snap.exists()) { list.innerHTML = ''; return; }
-    const users = Object.values(snap.val());
-    list.innerHTML = users.map(u => `
-      <div class="user-row" onclick="loginAs('${u.phone}')">
-        <div>
-          <div class="user-row-name">${u.name}</div>
-          <div class="user-row-id">${u.uid}</div>
-          <div class="user-row-phone">+91 ${u.phone}</div>
-        </div>
-        <div style="color:var(--gold);">→</div>
-      </div>`).join('');
-  } catch(e) { list.innerHTML = ''; }
+  const users = getDeviceUsers();
+  if (users.length === 0) {
+    list.innerHTML = '<div style="color:var(--ash);font-size:.75rem;padding:8px 0;text-align:center;">No saved accounts on this device</div>';
+    return;
+  }
+  list.innerHTML = users.map(u => `
+    <div class="user-row" style="position:relative;" onclick="loginAs('${u.phone}')">
+      <div>
+        <div class="user-row-name">${u.name}</div>
+        <div class="user-row-id">${u.uid}</div>
+        <div class="user-row-phone">+91 ${u.phone}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button onclick="event.stopPropagation();forgetAccount('${u.phone}')"
+          style="background:none;border:1px solid rgba(255,255,255,.15);color:var(--ash);
+                 border-radius:6px;padding:3px 8px;font-size:.65rem;cursor:pointer;">
+          ✕ forget
+        </button>
+        <span style="color:var(--gold);">→</span>
+      </div>
+    </div>`).join('');
+}
+
+function forgetAccount(phone) {
+  removeDeviceUser(phone);
+  loadSavedUsers();
 }
 
 async function doLogin() {
@@ -1931,13 +1964,20 @@ async function doLogin() {
 
   err.classList.remove('show');
   currentUser = snap.val();
+  saveDeviceUser(currentUser); // remember on this device
   enterCustomerApp();
 }
 
 async function loginAs(phone) {
   const snap = await get(fbUserRef(phone));
-  if (!snap.exists()) return;
+  if (!snap.exists()) {
+    // Account no longer exists — remove from device list
+    removeDeviceUser(phone);
+    loadSavedUsers();
+    return;
+  }
   currentUser = snap.val();
+  saveDeviceUser(currentUser); // refresh in device list
   enterCustomerApp();
 }
 
@@ -2157,6 +2197,7 @@ window.openSsViewer        = openSsViewer;
 window.closeSsViewer       = closeSsViewer;
 window.uploadOutletQR      = uploadOutletQR;
 window.removeScreenshot    = removeScreenshot;
+window.forgetAccount       = forgetAccount;
 window.handleScreenshotSelect = handleScreenshotSelect;
 window.submitPaymentAndOrder  = submitPaymentAndOrder;
 window.changeQty  = changeQty;
