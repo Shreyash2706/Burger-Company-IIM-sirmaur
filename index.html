@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Burger Company — IIM Sirmaur Canteen</title>
+<!-- PWA + Notifications -->
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Burger Co.">
+<meta name="theme-color" content="#14100A">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
 /* ═══════════════════════════════════
@@ -581,6 +589,48 @@ input:checked + .toggle-slider:before{transform:translateX(20px);}
 }
 
 /* Toast */
+/* ── Push Notification Permission Banner ── */
+.notif-banner{
+  position:fixed;bottom:80px;left:50%;transform:translateX(-50%);
+  background:linear-gradient(135deg,#1a1208,#241C10);
+  border:1px solid var(--gold);border-radius:14px;
+  padding:14px 18px;width:calc(100% - 32px);max-width:400px;
+  z-index:9999;display:none;flex-direction:column;gap:10px;
+  box-shadow:0 8px 32px rgba(0,0,0,.5);
+}
+.notif-banner.show{display:flex;}
+.notif-banner-title{font-size:.9rem;font-weight:700;color:var(--gold);}
+.notif-banner-desc{font-size:.78rem;color:var(--ash);line-height:1.4;}
+.notif-banner-btns{display:flex;gap:8px;}
+.notif-allow-btn{
+  flex:1;padding:9px;border:none;border-radius:8px;
+  background:var(--fire);color:#fff;font-size:.82rem;font-weight:700;cursor:pointer;
+}
+.notif-later-btn{
+  padding:9px 14px;border:1px solid rgba(255,255,255,.15);border-radius:8px;
+  background:transparent;color:var(--ash);font-size:.82rem;cursor:pointer;
+}
+.notif-ios-tip{
+  font-size:.72rem;color:var(--ash);text-align:center;
+  border-top:1px solid rgba(255,255,255,.08);padding-top:8px;
+}
+/* ── Notification dot on bell icon ── */
+.notif-bell{
+  position:fixed;bottom:90px;right:16px;
+  width:42px;height:42px;border-radius:50%;
+  background:var(--panel);border:1px solid rgba(255,255,255,.1);
+  display:none;align-items:center;justify-content:center;
+  font-size:1.2rem;cursor:pointer;z-index:900;
+  box-shadow:0 4px 12px rgba(0,0,0,.4);
+}
+.notif-bell.show{display:flex;}
+.notif-bell-dot{
+  position:absolute;top:4px;right:4px;
+  width:9px;height:9px;border-radius:50%;
+  background:var(--fire);display:none;
+}
+.notif-bell-dot.active{display:block;}
+
 .toast{
   position:fixed;top:62px;left:50%;transform:translateX(-50%) translateY(-20px);
   background:var(--leaf);color:#fff;padding:8px 18px;
@@ -1651,6 +1701,19 @@ input:checked + .toggle-slider:before{transform:translateX(20px);}
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
+<!-- Push Notification Permission Banner -->
+<div class="notif-banner" id="notif-banner">
+  <div class="notif-banner-title">🔔 Stay Updated on Your Orders</div>
+  <div class="notif-banner-desc">Get notified when your payment is verified and when your order is ready for pickup — even when the app is in the background.</div>
+  <div class="notif-banner-btns">
+    <button class="notif-allow-btn" onclick="requestNotifPermission()">Enable Notifications</button>
+    <button class="notif-later-btn" onclick="dismissNotifBanner()">Not Now</button>
+  </div>
+  <div class="notif-ios-tip" id="notif-ios-tip" style="display:none;">
+    📱 iPhone users: tap <strong>Share → Add to Home Screen</strong> first, then reopen to enable notifications.
+  </div>
+</div>
+
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script>
@@ -1983,6 +2046,8 @@ async function loginAs(phone) {
 
 function enterCustomerApp() {
   if (!currentUser) return;
+  // Initialize push notifications for this student session
+  initNotifications();
   const initials = currentUser.name.split(' ').map(w=>w[0].toUpperCase()).join('').slice(0,2);
   document.getElementById('user-avatar').textContent    = initials;
   document.getElementById('user-chip-name').textContent = currentUser.name.split(' ')[0];
@@ -2064,6 +2129,12 @@ function checkForReadyNotifications() {
   if (myReady.length > 0) {
     shownPickupIds.add(myReady[0].fbKey + '_ready');
     showPickupBanner(myReady[0]);
+    // Push notification (background-capable)
+    sendPushNotif(
+      '✅ Order Ready — Burger Company',
+      `Order #${myReady[0].queueNum} is ready! Head to the main desk to collect 🏃`,
+      `order_ready_${myReady[0].fbKey}`
+    );
   }
 }
 
@@ -2081,7 +2152,13 @@ function checkForPreparingNotifications() {
 }
 
 function showPaymentVerifiedBanner(order) {
-  showToast('💸 Payment verified! Your order is being prepared 👨‍🍳', '');
+  showToast('💸 Payment verified! Your order is being prepared 👨\u200d🍳', '');
+  // Push notification (background-capable)
+  sendPushNotif(
+    '💸 Payment Verified — Burger Company',
+    `Order #${order.queueNum} confirmed! We're preparing your food now 👨‍🍳`,
+    `payment_verified_${order.fbKey}`
+  );
   if (currentTab === 'orders') renderMyOrders();
   updateOrdersBadge();
 }
@@ -2972,6 +3049,127 @@ function showToast(msg, type='') {
   t.className = 'toast' + (type==='outlet' ? ' outlet-toast' : '') + ' show';
   setTimeout(() => t.classList.remove('show'), 3000);
 }
+
+/* ═════════════════════════════════════
+   PUSH NOTIFICATIONS
+   — Web Notifications API (works on:
+     Android Chrome: always
+     iOS Safari 16.4+: only when installed
+       to home screen as PWA)
+═════════════════════════════════════ */
+
+// Track which order+event combos we've already pushed
+const pushedNotifs = new Set(
+  JSON.parse(localStorage.getItem('bc_pushed_notifs') || '[]')
+);
+function savePushedNotifs() {
+  // Keep last 50 entries to avoid unbounded growth
+  const arr = [...pushedNotifs].slice(-50);
+  localStorage.setItem('bc_pushed_notifs', JSON.stringify(arr));
+}
+
+function isIOS() {
+  return /iphone|ipad|ipod/i.test(navigator.userAgent);
+}
+function isInStandaloneMode() {
+  return window.matchMedia('(display-mode: standalone)').matches
+    || window.navigator.standalone === true;
+}
+function notifSupported() {
+  return 'Notification' in window && 'serviceWorker' in navigator;
+}
+
+// Called right after student logs in
+function initNotifications() {
+  if (!notifSupported()) return;
+
+  // Already granted — register SW silently, no banner needed
+  if (Notification.permission === 'granted') {
+    registerNotifSW();
+    return;
+  }
+
+  // Denied — nothing we can do
+  if (Notification.permission === 'denied') return;
+
+  // iOS not installed — show special tip
+  if (isIOS() && !isInStandaloneMode()) {
+    showNotifBanner(true);
+    return;
+  }
+
+  // Default — show permission banner after short delay
+  // (don't ask immediately on login, feels aggressive)
+  const dismissed = localStorage.getItem('bc_notif_dismissed');
+  if (dismissed) return; // user said "not now" before
+  setTimeout(() => showNotifBanner(false), 4000);
+}
+
+function showNotifBanner(iosMode) {
+  const banner = document.getElementById('notif-banner');
+  const iosTip = document.getElementById('notif-ios-tip');
+  if (!banner) return;
+  if (iosMode) {
+    iosTip.style.display = 'block';
+  }
+  banner.classList.add('show');
+}
+
+function dismissNotifBanner() {
+  document.getElementById('notif-banner').classList.remove('show');
+  localStorage.setItem('bc_notif_dismissed', '1');
+}
+
+async function requestNotifPermission() {
+  document.getElementById('notif-banner').classList.remove('show');
+  if (!notifSupported()) return;
+
+  const perm = await Notification.requestPermission();
+  if (perm === 'granted') {
+    registerNotifSW();
+    showToast('🔔 Notifications enabled!', '');
+    localStorage.removeItem('bc_notif_dismissed');
+  } else {
+    showToast('Notifications blocked. Enable in browser settings.', '');
+  }
+}
+
+async function registerNotifSW() {
+  try {
+    const reg = await navigator.serviceWorker.register('sw.js');
+    console.log('[BC] Service worker registered:', reg.scope);
+  } catch(e) {
+    console.warn('[BC] SW registration failed:', e);
+  }
+}
+
+// Called from checkForPreparingNotifications & checkForReadyNotifications
+function sendPushNotif(title, body, tag) {
+  if (!notifSupported()) return;
+  if (Notification.permission !== 'granted') return;
+  if (pushedNotifs.has(tag)) return; // already sent
+
+  pushedNotifs.add(tag);
+  savePushedNotifs();
+
+  navigator.serviceWorker.ready.then(reg => {
+    reg.showNotification(title, {
+      body,
+      icon: 'icon-192.png',
+      badge: 'icon-192.png',
+      tag,                      // prevents duplicate notifications
+      renotify: false,
+      vibrate: [200, 100, 200],
+      data: { url: self.location ? self.location.href : '/' }
+    });
+  }).catch(() => {
+    // Fallback: in-page Notification if SW not ready
+    new Notification(title, { body, icon: 'icon-192.png', tag });
+  });
+}
+
+window.requestNotifPermission = requestNotifPermission;
+window.dismissNotifBanner     = dismissNotifBanner;
 </script>
 </body>
 </html>
