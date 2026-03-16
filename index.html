@@ -42,10 +42,15 @@ body{background:var(--char);font-family:'Outfit',sans-serif;color:var(--cream);m
   background:var(--char);padding:28px 20px;
 }
 .role-logo{
-  font-family:'Bebas Neue',sans-serif;font-size:3rem;
-  letter-spacing:5px;color:var(--gold);text-align:center;margin-bottom:4px;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  margin-bottom:4px;
 }
-.role-logo span{color:var(--fire);}
+.role-logo-emoji{font-size:2.8rem;line-height:1;letter-spacing:0;}
+.role-logo-text{
+  font-family:'Bebas Neue',sans-serif;font-size:3rem;
+  letter-spacing:5px;color:var(--gold);line-height:1;
+}
+.role-logo-text span{color:var(--fire);}
 .role-tagline{font-size:.75rem;color:var(--ash);letter-spacing:3px;text-align:center;margin-bottom:36px;}
 .role-cards{display:flex;flex-direction:column;gap:14px;width:100%;max-width:360px;}
 .role-card{
@@ -210,6 +215,7 @@ body{background:var(--char);font-family:'Outfit',sans-serif;color:var(--cream);m
   letter-spacing:3px;color:var(--gold);
   display:flex;align-items:center;gap:5px;
 }
+.brand .brand-emoji{letter-spacing:0;font-size:1.3rem;}
 .brand span{color:var(--fire);}
 .user-chip{
   display:flex;align-items:center;gap:7px;
@@ -1207,7 +1213,7 @@ input:checked + .toggle-slider:before{transform:translateX(20px);}
 ═══════════════════════════════════════════════════════ -->
 <div class="screen" id="screen-role">
   <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;padding:28px 20px;">
-    <div class="role-logo">🍔 BURGER<span>.</span>CO</div>
+    <div class="role-logo"><span class="role-logo-emoji">🍔</span><span class="role-logo-text">BURGER<span>.</span>CO</span></div>
     <div class="role-tagline">IIM SIRMAUR · CAMPUS CANTEEN</div>
 
     <div class="role-cards">
@@ -1240,7 +1246,7 @@ input:checked + .toggle-slider:before{transform:translateX(20px);}
 
     <div class="back-link" onclick="goTo('screen-role')">← Back to home</div>
 
-    <div class="auth-logo customer-logo">🍔 BURGER<span>.</span>CO</div>
+    <div class="auth-logo customer-logo"><span style="font-size:1.6rem;margin-right:6px;letter-spacing:0;">🍔</span>BURGER<span>.</span>CO</div>
     <div class="auth-tagline customer-tag">STUDENT ORDERING PORTAL</div>
 
     <!-- REGISTER card -->
@@ -1341,7 +1347,7 @@ input:checked + .toggle-slider:before{transform:translateX(20px);}
 
   <!-- TOP NAV -->
   <div class="top-nav">
-    <div class="brand">🍔 BURGER<span>.</span>CO</div>
+    <div class="brand"><span class="brand-emoji">🍔</span> BURGER<span>.</span>CO</div>
     <div style="display:flex;align-items:center;gap:8px;">
       <button class="install-app-btn" id="install-app-btn" onclick="showInstallModal()">⊕ Install App</button>
       <div class="user-chip" onclick="toggleProfileDrop()" id="user-chip">
@@ -1712,6 +1718,7 @@ input:checked + .toggle-slider:before{transform:translateX(20px);}
         <div class="install-step-row"><span class="install-step-num">3</span>Tap <strong>Share ⎋ → Add to Home Screen → Add</strong></div>
       </div>
       <button class="install-modal-cta" id="copy-url-btn" onclick="copyURLAndClose()">📋 Copy Page Link</button>
+      <div id="copy-hint" style="display:none;font-size:.78rem;color:var(--leaf);text-align:center;margin-top:-6px;">Now open Safari, paste in address bar, then Share → Add to Home Screen</div>
       <button class="install-modal-close" onclick="closeInstallModal()">Cancel</button>
     </div>
     <div id="imod-ios-safari" style="display:none;">
@@ -3184,7 +3191,9 @@ async function triggerInstall() {
 }
 
 async function copyURLAndClose() {
-  const btn = document.getElementById('copy-url-btn');
+  const btn  = document.getElementById('copy-url-btn');
+  const hint = document.getElementById('copy-hint');
+  if (btn) { btn.disabled=true; btn.textContent='Copying\u2026'; }
   try { await navigator.clipboard.writeText(location.href); }
   catch(e) {
     const ta=document.createElement('textarea');
@@ -3192,7 +3201,12 @@ async function copyURLAndClose() {
     ta.select(); document.execCommand('copy');
     document.body.removeChild(ta);
   }
-  if(btn){ btn.textContent='\u2705 Copied! Now open Safari'; btn.style.background='var(--leaf)'; }
+  if (btn) {
+    btn.textContent='\u2705 Link Copied!';
+    btn.style.background='var(--leaf)';
+    btn.disabled=false;
+  }
+  if (hint) hint.style.display='block';
 }
 
 function showSetupScreen(entryFn) {
