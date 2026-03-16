@@ -3286,17 +3286,25 @@ async function triggerInstall() {
 let _pendingAppEntry = null; // 'customer' or 'outlet'
 
 function showSetupScreen(entryFn) {
-  // If already completed setup on this device, skip straight in
-  const setupDone = localStorage.getItem('bc_setup_done');
-  if (setupDone && Notification.permission === 'granted' && isInStandaloneMode()) {
-    registerNotifSW();
+  // Safari browser on iPhone/iPad — no install prompt, no notifications
+  // Nothing we can do — just let them in directly
+  if (isIOS() && !isInStandaloneMode()) {
     entryFn();
     return;
   }
-  // Also skip if notifications already granted and installed
+
+  // Already fully set up — skip straight in
   if (Notification.permission === 'granted' && isInStandaloneMode()) {
     registerNotifSW();
     localStorage.setItem('bc_setup_done', '1');
+    entryFn();
+    return;
+  }
+
+  // Already set up before and notifications granted — skip
+  const setupDone = localStorage.getItem('bc_setup_done');
+  if (setupDone && Notification.permission === 'granted') {
+    registerNotifSW();
     entryFn();
     return;
   }
@@ -3392,10 +3400,9 @@ function setupStep2UI() {
     return;
   }
 
-  // iOS not in standalone — can't get notifications
-  if (isIOS() && !isInStandaloneMode()) {
+  // Notifications not supported at all (very old browser)
+  if (!('Notification' in window)) {
     enableBtn.style.display = 'none';
-    iosTip.style.display    = 'block';
     enterBtn.style.display  = 'block';
     enterBtn.textContent    = 'Continue →';
     enterBtn.style.background = 'rgba(255,255,255,.1)';
