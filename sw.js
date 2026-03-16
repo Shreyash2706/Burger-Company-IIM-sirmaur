@@ -1,98 +1,167 @@
 /* ═══════════════════════════════════════════════════════════
    Burger Company — IIM Sirmaur Canteen
-   Service Worker — Push & Background Notification Handler
+   Service Worker v2 — Background Firebase Polling
    
-   This file MUST be placed in the same directory as
-   burger-company-final.html on GitHub Pages.
-   
-   Rename it to sw.js in your GitHub repo.
+   How it works:
+   1. App registers SW and sends user info + order statuses via postMessage
+   2. SW stores them and polls Firebase REST API every 30 seconds
+   3. When an order status changes to 'preparing' or 'ready', SW fires
+      a push notification directly — even when app is closed/backgrounded
+   4. Works on iOS 16.4+ (installed PWA) and Android Chrome
 ═══════════════════════════════════════════════════════════ */
 
-const CACHE_NAME = 'burger-co-v1';
+const CACHE_NAME   = 'burger-co-v2';
+const DB_URL       = 'https://burger-company-iim-default-rtdb.asia-southeast1.firebasedatabase.app';
+const POLL_INTERVAL = 30000; // 30 seconds
 
-// ── Install: cache the app shell ──────────────────────────
+// ── State stored in SW ────────────────────────────────────
+let watchedUser    = null;  // { uid, name, phone }
+let knownStatuses  = {};    // { fbKey: status }
+let pollTimer      = null;
+
+// ── Install ───────────────────────────────────────────────
 self.addEventListener('install', event => {
   self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      // Cache the main app file so it loads offline
-      return cache.addAll([
-        './',
-        './index.html',
-      ]).catch(() => {
-        // Silently ignore cache errors (file names may differ)
-      });
-    })
+    caches.open(CACHE_NAME).then(cache =>
+      cache.addAll(['./', './index.html']).catch(() => {})
+    )
   );
 });
 
-// ── Activate: clean old caches ────────────────────────────
+// ── Activate ──────────────────────────────────────────────
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
-      )
-    ).then(() => self.clients.claim())
+    caches.keys()
+      .then(keys => Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))))
+      .then(() => self.clients.claim())
   );
 });
 
-// ── Push event: show notification from server (future FCM) ─
-self.addEventListener('push', event => {
-  let data = { title: 'Burger Company', body: 'You have an update on your order.' };
-  try { data = event.data.json(); } catch(e) {}
+// ── Message from app ──────────────────────────────────────
+// App sends: { type: 'WATCH_ORDERS', user: {...}, statuses: {fbKey: status} }
+// App sends: { type: 'STOP_WATCH' }
+self.addEventListener('message', event => {
+  const msg = event.data;
+  if (!msg) return;
 
-  event.waitUntil(
-    self.registration.showNotification(data.title, {
-      body      : data.body,
-      icon      : 'icon-192.png',
-      badge     : 'icon-192.png',
-      tag       : data.tag || 'bc-update',
-      renotify  : false,
-      vibrate   : [200, 100, 200],
-      data      : { url: data.url || self.location.origin }
-    })
-  );
+  if (msg.type === 'WATCH_ORDERS') {
+    watchedUser   = msg.user;
+    knownStatuses = msg.statuses || {};
+    startPolling();
+  } else if (msg.type === 'UPDATE_STATUSES') {
+    // App is active — just update our known statuses so we don't re-notify
+    knownStatuses = msg.statuses || {};
+  } else if (msg.type === 'STOP_WATCH') {
+    watchedUser = null;
+    stopPolling();
+  }
 });
 
-// ── Notification click: bring app to foreground ───────────
+// ── Polling ───────────────────────────────────────────────
+function startPolling() {
+  stopPolling();
+  pollFirebase(); // immediate first check
+  pollTimer = setInterval(pollFirebase, POLL_INTERVAL);
+}
+
+function stopPolling() {
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+}
+
+async function pollFirebase() {
+  if (!watchedUser) return;
+
+  try {
+    // Fetch all orders from Firebase REST API (no SDK needed)
+    const res  = await fetch(`${DB_URL}/orders.json`);
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!data) return;
+
+    // Loop through orders belonging to this user
+    Object.entries(data).forEach(([fbKey, order]) => {
+      if (!order || !order.customer) return;
+      if (order.customer.uid !== watchedUser.uid) return;
+
+      const prevStatus = knownStatuses[fbKey];
+      const newStatus  = order.status;
+
+      // Only notify if status actually changed to something actionable
+      if (prevStatus !== newStatus) {
+        knownStatuses[fbKey] = newStatus;
+
+        if (newStatus === 'preparing' && prevStatus === 'payment_uploaded') {
+          fireNotification(
+            '\uD83D\uDCB8 Payment Verified \u2014 Burger Company',
+            `Order #${String(order.queueNum).padStart(2,'0')} confirmed! Being prepared now \uD83D\uDC68\u200D\uD83C\uDF73`,
+            `prep_${fbKey}`
+          );
+        } else if (newStatus === 'ready') {
+          fireNotification(
+            '\u2705 Order Ready \u2014 Burger Company',
+            `Order #${String(order.queueNum).padStart(2,'0')} is ready! Head to the main desk \uD83C\uDFC3`,
+            `ready_${fbKey}`
+          );
+        } else if (newStatus === 'payment_rejected') {
+          fireNotification(
+            '\u274C Payment Rejected \u2014 Burger Company',
+            `Order #${String(order.queueNum).padStart(2,'0')} \u2014 please re-upload your payment screenshot.`,
+            `rejected_${fbKey}`
+          );
+        }
+      }
+    });
+  } catch(e) {
+    console.warn('[SW] Poll error:', e);
+  }
+}
+
+function fireNotification(title, body, tag) {
+  self.registration.showNotification(title, {
+    body,
+    icon      : 'icon-192.png',
+    badge     : 'icon-192.png',
+    tag,
+    renotify  : false,
+    vibrate   : [200, 100, 200],
+    data      : { url: self.location.origin }
+  });
+}
+
+// ── Notification click ────────────────────────────────────
 self.addEventListener('notificationclick', event => {
   event.notification.close();
   const target = event.notification.data?.url || self.location.origin;
-
   event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windowClients => {
-      // If app is already open, focus it
-      for (const client of windowClients) {
-        if (client.url.includes(self.location.origin) && 'focus' in client) {
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      for (const client of list) {
+        if (client.url.includes(self.location.origin) && 'focus' in client)
           return client.focus();
-        }
       }
-      // Otherwise open a new window
-      if (clients.openWindow) {
-        return clients.openWindow(target);
-      }
+      if (clients.openWindow) return clients.openWindow(target);
     })
   );
 });
 
-// ── Fetch: serve from cache when offline ─────────────────
+// ── Fetch: cache-first for app shell ─────────────────────
 self.addEventListener('fetch', event => {
-  // Only handle same-origin GET requests
   if (event.request.method !== 'GET') return;
   if (!event.request.url.startsWith(self.location.origin)) return;
+  // Don't cache Firebase API calls
+  if (event.request.url.includes('firebaseio.com') ||
+      event.request.url.includes('firebase')) return;
 
   event.respondWith(
     caches.match(event.request).then(cached => {
       if (cached) return cached;
       return fetch(event.request).then(response => {
-        // Cache successful responses
         if (response && response.status === 200) {
           const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+          caches.open(CACHE_NAME).then(c => c.put(event.request, clone));
         }
         return response;
-      }).catch(() => cached); // fallback to cache on network fail
+      }).catch(() => cached);
     })
   );
 });
