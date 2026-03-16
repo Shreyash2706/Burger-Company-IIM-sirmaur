@@ -2131,6 +2131,7 @@ function enterCustomerApp() {
 
 
 function customerLogout() {
+  stopSWWatch(); // tell SW to stop polling
   currentUser = null;
   cart = {};
   orders = [];
@@ -2173,6 +2174,7 @@ function subscribeCustomerOrders() {
     if (currentTab === 'orders') renderMyOrders();
     checkForReadyNotifications();
     checkForPreparingNotifications();
+    syncOrdersToSW(orders); // keep SW in sync for background notifications
   });
   if (stockUnsubscribe) stockUnsubscribe();
   stockUnsubscribe = onValue(fbStockRef(), (snap) => {
@@ -3240,12 +3242,48 @@ async function registerNotifSW() {
   catch(e) { console.warn('[BC] SW:',e); }
 }
 
+// ── Tell SW which orders to watch for background polling ──
+function syncOrdersToSW(ordersList) {
+  if (!currentUser) return;
+  if (!('serviceWorker' in navigator)) return;
+  if (Notification.permission !== 'granted') return;
+  const statuses = {};
+  ordersList.forEach(o => {
+    if (o.customer && o.customer.uid === currentUser.uid && o.status !== 'delivered')
+      statuses[o.fbKey] = o.status;
+  });
+  navigator.serviceWorker.ready.then(reg => {
+    if (reg.active) reg.active.postMessage({
+      type: 'WATCH_ORDERS',
+      user: { uid: currentUser.uid, name: currentUser.name },
+      statuses
+    });
+  }).catch(() => {});
+}
+
+function stopSWWatch() {
+  if (!('serviceWorker' in navigator)) return;
+  navigator.serviceWorker.ready.then(reg => {
+    if (reg.active) reg.active.postMessage({ type: 'STOP_WATCH' });
+  }).catch(() => {});
+}
+
 function sendPushNotif(title, body, tag) {
   if (!isInStandaloneMode()) return;
   if (!notifSupported()) return;
   if (Notification.permission!=='granted') return;
   if (pushedNotifs.has(tag)) return;
   pushedNotifs.add(tag); savePushedNotifs();
+  // Sync current statuses to SW so it won't double-fire
+  if (currentUser && orders.length) {
+    const statuses = {};
+    orders.forEach(o => {
+      if (o.customer && o.customer.uid === currentUser.uid) statuses[o.fbKey] = o.status;
+    });
+    navigator.serviceWorker.ready.then(reg => {
+      if (reg.active) reg.active.postMessage({ type: 'UPDATE_STATUSES', statuses });
+    }).catch(() => {});
+  }
   navigator.serviceWorker.ready.then(reg => {
     reg.showNotification(title,{
       body, icon:'icon-192.png', badge:'icon-192.png',
