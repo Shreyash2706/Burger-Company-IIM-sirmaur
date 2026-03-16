@@ -589,6 +589,96 @@ input:checked + .toggle-slider:before{transform:translateX(20px);}
 }
 
 /* Toast */
+/* ════════════════════════════════════════
+   MANDATORY SETUP OVERLAY
+════════════════════════════════════════ */
+.setup-overlay{
+  position:fixed;inset:0;z-index:99999;
+  background:var(--char);
+  display:none;align-items:center;justify-content:center;
+  padding:16px;
+  overflow-y:auto;
+}
+.setup-overlay.show{display:flex;}
+.setup-card{
+  width:100%;max-width:380px;
+  background:var(--smoke);
+  border:1px solid rgba(245,166,35,.2);
+  border-radius:20px;
+  padding:28px 24px 24px;
+  display:flex;flex-direction:column;align-items:center;
+  gap:20px;
+}
+.setup-header{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;}
+.setup-logo{font-size:2.8rem;line-height:1;}
+.setup-title{font-size:1.3rem;font-weight:800;color:var(--gold);letter-spacing:2px;font-family:"Bebas Neue",sans-serif;}
+.setup-sub{font-size:.8rem;color:var(--ash);}
+.setup-dots{display:flex;gap:8px;}
+.setup-dot{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.15);transition:background .3s;}
+.setup-dot.active{background:var(--fire);}
+.setup-dot.done{background:var(--leaf);}
+.setup-step{width:100%;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;}
+.setup-step-icon{font-size:2.6rem;}
+.setup-step-title{font-size:1.15rem;font-weight:700;color:var(--cream);}
+.setup-step-desc{font-size:.82rem;color:var(--ash);line-height:1.55;max-width:300px;}
+.setup-primary-btn{
+  width:100%;padding:14px;border:none;border-radius:12px;
+  background:var(--fire);color:#fff;
+  font-size:.95rem;font-weight:700;cursor:pointer;
+  letter-spacing:.5px;
+  transition:opacity .2s;
+}
+.setup-primary-btn:hover{opacity:.88;}
+.setup-primary-btn:disabled{opacity:.45;cursor:not-allowed;}
+.setup-skip-btn{
+  background:none;border:none;
+  color:var(--ash);font-size:.78rem;cursor:pointer;
+  text-decoration:underline;padding:4px;
+}
+.setup-skip-btn:hover{color:var(--cream);}
+.setup-already{
+  display:flex;align-items:center;gap:10px;
+  background:rgba(39,174,96,.1);border:1px solid rgba(39,174,96,.25);
+  border-radius:10px;padding:12px 16px;
+  font-size:.85rem;color:var(--alert);font-weight:600;
+  width:100%;
+}
+.setup-ios-steps{
+  width:100%;display:flex;flex-direction:column;gap:10px;
+  background:rgba(255,255,255,.04);border-radius:12px;padding:14px;
+  text-align:left;
+}
+.setup-ios-row{
+  display:flex;align-items:flex-start;gap:10px;
+  font-size:.83rem;color:var(--cream);line-height:1.4;
+}
+.setup-ios-num{
+  min-width:24px;height:24px;border-radius:50%;
+  background:var(--fire);color:#fff;font-size:.75rem;font-weight:700;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.setup-notif-preview{
+  width:100%;display:flex;flex-direction:column;gap:8px;
+}
+.setup-notif-item{
+  display:flex;align-items:center;gap:12px;
+  background:rgba(255,255,255,.05);border-radius:10px;
+  padding:10px 14px;text-align:left;
+  font-size:.82rem;
+}
+.setup-notif-item span{font-size:1.4rem;}
+.setup-blocked-msg{
+  width:100%;background:rgba(232,50,10,.08);
+  border:1px solid rgba(232,50,10,.3);
+  border-radius:10px;padding:12px 14px;
+  font-size:.8rem;color:#ff8c7a;text-align:left;
+}
+.setup-ios-notif-tip{
+  width:100%;background:rgba(255,255,255,.05);
+  border-radius:10px;padding:12px 14px;
+  font-size:.8rem;color:var(--ash);text-align:center;line-height:1.5;
+}
+.setup-enter-btn{background:var(--leaf)!important;}
 /* ── Push Notification Permission Banner ── */
 .notif-banner{
   position:fixed;bottom:80px;left:50%;transform:translateX(-50%);
@@ -1701,16 +1791,112 @@ input:checked + .toggle-slider:before{transform:translateX(20px);}
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
-<!-- Push Notification Permission Banner -->
-<div class="notif-banner" id="notif-banner">
-  <div class="notif-banner-title">🔔 Stay Updated on Your Orders</div>
-  <div class="notif-banner-desc">Get notified when your payment is verified and when your order is ready for pickup — even when the app is in the background.</div>
-  <div class="notif-banner-btns">
-    <button class="notif-allow-btn" onclick="requestNotifPermission()">Enable Notifications</button>
-    <button class="notif-later-btn" onclick="dismissNotifBanner()">Not Now</button>
-  </div>
-  <div class="notif-ios-tip" id="notif-ios-tip" style="display:none;">
-    📱 iPhone users: tap <strong>Share → Add to Home Screen</strong> first, then reopen to enable notifications.
+<!-- Push Notification Permission Banner (kept for fallback) -->
+<div class="notif-banner" id="notif-banner" style="display:none!important;"></div>
+
+<!-- ═══════════════════════════════════════
+     MANDATORY SETUP SCREEN
+     Shown after every login until both
+     install + notifications are done
+══════════════════════════════════════ -->
+<div class="setup-overlay" id="setup-overlay">
+  <div class="setup-card">
+
+    <!-- Header -->
+    <div class="setup-header">
+      <div class="setup-logo">🍔</div>
+      <div class="setup-title">BURGER COMPANY</div>
+      <div class="setup-sub">Quick setup before you begin</div>
+    </div>
+
+    <!-- Progress dots -->
+    <div class="setup-dots">
+      <div class="setup-dot active" id="sdot-1"></div>
+      <div class="setup-dot" id="sdot-2"></div>
+    </div>
+
+    <!-- STEP 1: Install App -->
+    <div class="setup-step" id="setup-step-1">
+      <div class="setup-step-icon">📲</div>
+      <div class="setup-step-title">Install the App</div>
+      <div class="setup-step-desc">
+        Add Burger Company to your home screen for instant access — just like a real app.
+      </div>
+
+      <!-- Android install (shows when beforeinstallprompt fires) -->
+      <button class="setup-primary-btn" id="install-btn" onclick="triggerInstall()" style="display:none;">
+        ＋ Add to Home Screen
+      </button>
+
+      <!-- iOS manual instructions -->
+      <div class="setup-ios-steps" id="ios-install-steps" style="display:none;">
+        <div class="setup-ios-row"><span class="setup-ios-num">1</span>Tap the <strong>Share</strong> button <span style="font-size:1.1rem;">⎋</span> at the bottom of Safari</div>
+        <div class="setup-ios-row"><span class="setup-ios-num">2</span>Scroll down and tap <strong>"Add to Home Screen"</strong></div>
+        <div class="setup-ios-row"><span class="setup-ios-num">3</span>Tap <strong>Add</strong> — then reopen from your home screen</div>
+      </div>
+
+      <!-- Already installed / unsupported -->
+      <div class="setup-already" id="already-installed" style="display:none;">
+        <span style="font-size:1.5rem;">✅</span>
+        <span>App already installed on this device!</span>
+      </div>
+
+      <button class="setup-skip-btn" id="install-skip-btn" onclick="completeInstallStep()">
+        Already installed — Continue →
+      </button>
+    </div>
+
+    <!-- STEP 2: Enable Notifications -->
+    <div class="setup-step" id="setup-step-2" style="display:none;">
+      <div class="setup-step-icon">🔔</div>
+      <div class="setup-step-title">Enable Notifications</div>
+      <div class="setup-step-desc">
+        Get instant alerts when your payment is verified and when your order is ready for pickup — even when your screen is off.
+      </div>
+
+      <div class="setup-notif-preview">
+        <div class="setup-notif-item">
+          <span>💸</span>
+          <div>
+            <div style="font-weight:700;font-size:.82rem;">Payment Verified</div>
+            <div style="font-size:.75rem;color:var(--ash);">Your order is being prepared 👨‍🍳</div>
+          </div>
+        </div>
+        <div class="setup-notif-item">
+          <span>✅</span>
+          <div>
+            <div style="font-weight:700;font-size:.82rem;">Order Ready!</div>
+            <div style="font-size:.75rem;color:var(--ash);">Head to the main desk to collect 🏃</div>
+          </div>
+        </div>
+      </div>
+
+      <button class="setup-primary-btn" id="notif-enable-btn" onclick="setupRequestNotif()">
+        🔔 Enable Notifications
+      </button>
+
+      <!-- Shown after permission granted -->
+      <div class="setup-already" id="notif-granted-msg" style="display:none;">
+        <span style="font-size:1.5rem;">✅</span>
+        <span>Notifications enabled!</span>
+      </div>
+
+      <!-- Shown if blocked -->
+      <div class="setup-blocked-msg" id="notif-blocked-msg" style="display:none;">
+        <div>⚠️ Notifications are blocked in your browser settings.</div>
+        <div style="margin-top:6px;font-size:.75rem;">To fix: tap the lock/info icon in your browser address bar → Site Settings → Notifications → Allow</div>
+      </div>
+
+      <!-- iOS not installed tip -->
+      <div class="setup-ios-notif-tip" id="ios-notif-tip" style="display:none;">
+        📱 On iPhone, notifications only work after installing the app to your home screen (Step 1). Please reopen from home screen first.
+      </div>
+
+      <button class="setup-primary-btn setup-enter-btn" id="setup-enter-btn" onclick="completeSetup()" style="display:none;margin-top:12px;">
+        Let's Go! 🍔
+      </button>
+    </div>
+
   </div>
 </div>
 
@@ -2046,8 +2232,7 @@ async function loginAs(phone) {
 
 function enterCustomerApp() {
   if (!currentUser) return;
-  // Initialize push notifications for this student session
-  initNotifications();
+  // Populate UI fields
   const initials = currentUser.name.split(' ').map(w=>w[0].toUpperCase()).join('').slice(0,2);
   document.getElementById('user-avatar').textContent    = initials;
   document.getElementById('user-chip-name').textContent = currentUser.name.split(' ')[0];
@@ -2059,7 +2244,8 @@ function enterCustomerApp() {
   updateCartUI();
   switchTab('menu');
   subscribeCustomerOrders();
-  goTo('screen-customer-app');
+  // Route through mandatory setup screen
+  showSetupScreen(() => goTo('screen-customer-app'));
 }
 
 
@@ -2175,7 +2361,8 @@ function doOutletLogin() {
   }
   err.classList.remove('show');
   subscribeOutletOrders();
-  goTo('screen-outlet-app');
+  // Route through mandatory setup screen
+  showSetupScreen(() => goTo('screen-outlet-app'));
 }
 
 function outletLogout() {
@@ -3051,125 +3238,245 @@ function showToast(msg, type='') {
 }
 
 /* ═════════════════════════════════════
-   PUSH NOTIFICATIONS
-   — Web Notifications API (works on:
-     Android Chrome: always
-     iOS Safari 16.4+: only when installed
-       to home screen as PWA)
+   PUSH NOTIFICATIONS + MANDATORY SETUP
+   ─────────────────────────────────────
+   Flow: login → showSetupScreen()
+     Step 1: Install to home screen
+     Step 2: Enable notifications
+     → completeSetup() → enter app
 ═════════════════════════════════════ */
 
-// Track which order+event combos we've already pushed
+// Track pushed notifications (prevent duplicates)
 const pushedNotifs = new Set(
   JSON.parse(localStorage.getItem('bc_pushed_notifs') || '[]')
 );
 function savePushedNotifs() {
-  // Keep last 50 entries to avoid unbounded growth
-  const arr = [...pushedNotifs].slice(-50);
-  localStorage.setItem('bc_pushed_notifs', JSON.stringify(arr));
+  localStorage.setItem('bc_pushed_notifs', JSON.stringify([...pushedNotifs].slice(-50)));
 }
 
-function isIOS() {
-  return /iphone|ipad|ipod/i.test(navigator.userAgent);
-}
+// Platform helpers
+function isIOS() { return /iphone|ipad|ipod/i.test(navigator.userAgent); }
 function isInStandaloneMode() {
   return window.matchMedia('(display-mode: standalone)').matches
-    || window.navigator.standalone === true;
+      || window.navigator.standalone === true;
 }
-function notifSupported() {
-  return 'Notification' in window && 'serviceWorker' in navigator;
+function notifSupported() { return 'Notification' in window && 'serviceWorker' in navigator; }
+
+// ── Install prompt (Android/Chrome) ──────────────────────
+let deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  // If setup screen is already visible, show the install button
+  const btn = document.getElementById('install-btn');
+  if (btn) btn.style.display = 'block';
+});
+
+async function triggerInstall() {
+  if (!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  const { outcome } = await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+  if (outcome === 'accepted') {
+    completeInstallStep();
+  }
 }
 
-// Called right after student logs in
-function initNotifications() {
-  if (!notifSupported()) return;
+// ── Setup screen control ──────────────────────────────────
+let _pendingAppEntry = null; // 'customer' or 'outlet'
 
-  // Already granted — register SW silently, no banner needed
+function showSetupScreen(entryFn) {
+  // If already completed setup on this device, skip straight in
+  const setupDone = localStorage.getItem('bc_setup_done');
+  if (setupDone && Notification.permission === 'granted' && isInStandaloneMode()) {
+    registerNotifSW();
+    entryFn();
+    return;
+  }
+  // Also skip if notifications already granted and installed
+  if (Notification.permission === 'granted' && isInStandaloneMode()) {
+    registerNotifSW();
+    localStorage.setItem('bc_setup_done', '1');
+    entryFn();
+    return;
+  }
+
+  _pendingAppEntry = entryFn;
+  const overlay = document.getElementById('setup-overlay');
+  overlay.classList.add('show');
+  setupStep1UI();
+}
+
+function setupStep1UI() {
+  // Show step 1, hide step 2
+  document.getElementById('setup-step-1').style.display = 'flex';
+  document.getElementById('setup-step-2').style.display = 'none';
+  document.getElementById('sdot-1').classList.add('active');
+  document.getElementById('sdot-2').classList.remove('active');
+
+  const installBtn    = document.getElementById('install-btn');
+  const iosSteps      = document.getElementById('ios-install-steps');
+  const alreadyDiv    = document.getElementById('already-installed');
+  const skipBtn       = document.getElementById('install-skip-btn');
+
+  // Already installed as PWA
+  if (isInStandaloneMode()) {
+    alreadyDiv.style.display  = 'flex';
+    installBtn.style.display  = 'none';
+    iosSteps.style.display    = 'none';
+    skipBtn.textContent       = 'Continue →';
+    return;
+  }
+
+  // iOS — show manual steps
+  if (isIOS()) {
+    iosSteps.style.display   = 'block';
+    installBtn.style.display = 'none';
+    skipBtn.textContent      = 'Done — Continue →';
+    return;
+  }
+
+  // Android/Chrome — show native prompt button if available
+  if (deferredInstallPrompt) {
+    installBtn.style.display = 'block';
+    skipBtn.style.display    = 'block';
+  } else {
+    // App already installed or browser doesn't support prompt
+    alreadyDiv.style.display = 'flex';
+    skipBtn.textContent      = 'Continue →';
+  }
+}
+
+function completeInstallStep() {
+  // Animate dot 1 → done, dot 2 → active
+  document.getElementById('sdot-1').classList.remove('active');
+  document.getElementById('sdot-1').classList.add('done');
+  document.getElementById('sdot-2').classList.add('active');
+
+  // Transition to step 2
+  document.getElementById('setup-step-1').style.display = 'none';
+  document.getElementById('setup-step-2').style.display = 'flex';
+
+  setupStep2UI();
+}
+
+function setupStep2UI() {
+  const enableBtn    = document.getElementById('notif-enable-btn');
+  const grantedMsg   = document.getElementById('notif-granted-msg');
+  const blockedMsg   = document.getElementById('notif-blocked-msg');
+  const iosTip       = document.getElementById('ios-notif-tip');
+  const enterBtn     = document.getElementById('setup-enter-btn');
+
+  // Reset all
+  enableBtn.style.display  = 'block';
+  grantedMsg.style.display = 'none';
+  blockedMsg.style.display = 'none';
+  iosTip.style.display     = 'none';
+  enterBtn.style.display   = 'none';
+
   if (Notification.permission === 'granted') {
+    // Already granted — skip straight to enter
+    enableBtn.style.display  = 'none';
+    grantedMsg.style.display = 'flex';
+    enterBtn.style.display   = 'block';
     registerNotifSW();
     return;
   }
 
-  // Denied — nothing we can do
-  if (Notification.permission === 'denied') return;
-
-  // iOS not installed — show special tip
-  if (isIOS() && !isInStandaloneMode()) {
-    showNotifBanner(true);
+  if (Notification.permission === 'denied') {
+    enableBtn.style.display  = 'none';
+    blockedMsg.style.display = 'block';
+    enterBtn.style.display   = 'block'; // let them in but warn
+    enterBtn.textContent     = 'Continue without notifications →';
+    enterBtn.style.background = 'rgba(255,255,255,.1)';
     return;
   }
 
-  // Default — show permission banner after short delay
-  // (don't ask immediately on login, feels aggressive)
-  const dismissed = localStorage.getItem('bc_notif_dismissed');
-  if (dismissed) return; // user said "not now" before
-  setTimeout(() => showNotifBanner(false), 4000);
-}
-
-function showNotifBanner(iosMode) {
-  const banner = document.getElementById('notif-banner');
-  const iosTip = document.getElementById('notif-ios-tip');
-  if (!banner) return;
-  if (iosMode) {
-    iosTip.style.display = 'block';
+  // iOS not in standalone — can't get notifications
+  if (isIOS() && !isInStandaloneMode()) {
+    enableBtn.style.display = 'none';
+    iosTip.style.display    = 'block';
+    enterBtn.style.display  = 'block';
+    enterBtn.textContent    = 'Continue →';
+    enterBtn.style.background = 'rgba(255,255,255,.1)';
+    return;
   }
-  banner.classList.add('show');
 }
 
-function dismissNotifBanner() {
-  document.getElementById('notif-banner').classList.remove('show');
-  localStorage.setItem('bc_notif_dismissed', '1');
-}
+async function setupRequestNotif() {
+  const enableBtn  = document.getElementById('notif-enable-btn');
+  const grantedMsg = document.getElementById('notif-granted-msg');
+  const blockedMsg = document.getElementById('notif-blocked-msg');
+  const enterBtn   = document.getElementById('setup-enter-btn');
 
-async function requestNotifPermission() {
-  document.getElementById('notif-banner').classList.remove('show');
-  if (!notifSupported()) return;
+  enableBtn.disabled   = true;
+  enableBtn.textContent = 'Requesting…';
 
   const perm = await Notification.requestPermission();
+
   if (perm === 'granted') {
     registerNotifSW();
-    showToast('🔔 Notifications enabled!', '');
-    localStorage.removeItem('bc_notif_dismissed');
+    enableBtn.style.display  = 'none';
+    grantedMsg.style.display = 'flex';
+    enterBtn.style.display   = 'block';
+    enterBtn.textContent     = "Let's Go! 🍔";
+  } else if (perm === 'denied') {
+    enableBtn.style.display  = 'none';
+    blockedMsg.style.display = 'block';
+    enterBtn.style.display   = 'block';
+    enterBtn.textContent     = 'Continue without notifications →';
+    enterBtn.style.background = 'rgba(255,255,255,.1)';
   } else {
-    showToast('Notifications blocked. Enable in browser settings.', '');
+    // dismissed
+    enableBtn.disabled    = false;
+    enableBtn.textContent = '🔔 Enable Notifications';
+  }
+}
+
+function completeSetup() {
+  localStorage.setItem('bc_setup_done', '1');
+  document.getElementById('setup-overlay').classList.remove('show');
+  if (_pendingAppEntry) {
+    _pendingAppEntry();
+    _pendingAppEntry = null;
   }
 }
 
 async function registerNotifSW() {
+  if (!('serviceWorker' in navigator)) return;
   try {
     const reg = await navigator.serviceWorker.register('sw.js');
-    console.log('[BC] Service worker registered:', reg.scope);
-  } catch(e) {
-    console.warn('[BC] SW registration failed:', e);
-  }
+    console.log('[BC] SW registered:', reg.scope);
+  } catch(e) { console.warn('[BC] SW failed:', e); }
 }
 
-// Called from checkForPreparingNotifications & checkForReadyNotifications
+// ── Send push notification ────────────────────────────────
 function sendPushNotif(title, body, tag) {
   if (!notifSupported()) return;
   if (Notification.permission !== 'granted') return;
-  if (pushedNotifs.has(tag)) return; // already sent
+  if (pushedNotifs.has(tag)) return;
 
   pushedNotifs.add(tag);
   savePushedNotifs();
 
   navigator.serviceWorker.ready.then(reg => {
     reg.showNotification(title, {
-      body,
-      icon: 'icon-192.png',
-      badge: 'icon-192.png',
-      tag,                      // prevents duplicate notifications
-      renotify: false,
-      vibrate: [200, 100, 200],
-      data: { url: self.location ? self.location.href : '/' }
+      body, icon: 'icon-192.png', badge: 'icon-192.png',
+      tag, renotify: false, vibrate: [200, 100, 200],
+      data: { url: location.href }
     });
   }).catch(() => {
-    // Fallback: in-page Notification if SW not ready
     new Notification(title, { body, icon: 'icon-192.png', tag });
   });
 }
 
-window.requestNotifPermission = requestNotifPermission;
-window.dismissNotifBanner     = dismissNotifBanner;
+// Expose to window
+window.triggerInstall       = triggerInstall;
+window.completeInstallStep  = completeInstallStep;
+window.setupRequestNotif    = setupRequestNotif;
+window.completeSetup        = completeSetup;
+window.requestNotifPermission = setupRequestNotif;
+window.dismissNotifBanner   = () => {};
 </script>
 </body>
 </html>
