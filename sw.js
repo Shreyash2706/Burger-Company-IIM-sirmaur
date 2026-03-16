@@ -1,24 +1,45 @@
 /* ═══════════════════════════════════════════════════════════
    Burger Company — IIM Sirmaur Canteen
-   Service Worker v3 — Background Polling for Both Roles
+   Service Worker v4
 
-   Customer: polls for order status changes (payment verified / ready)
-   Outlet:   polls for new incoming orders (payment_uploaded)
+   Improvements over v3:
+   - Poll interval: 8s (was 30s) — much faster notification delivery
+   - Outlet mode persisted via Cache API — survives iOS SW kill/restart
+   - fresh flag: on first outlet login, load existing as baseline (no spam)
+   - Both customer + outlet can poll simultaneously
 ═══════════════════════════════════════════════════════════ */
 
-const CACHE_NAME    = 'burger-co-v3';
+const CACHE_NAME    = 'burger-co-v4';
 const DB_URL        = 'https://burger-company-iim-default-rtdb.asia-southeast1.firebasedatabase.app';
-const POLL_INTERVAL = 30000; // 30 seconds
+const POLL_INTERVAL = 8000;   // 8 seconds — fast enough for real-time feel
 
-// ── Customer state ────────────────────────────────────────
-let watchedUser   = null;   // { uid, name }
-let knownStatuses = {};     // { fbKey: status }
+// ── In-memory state (reset when SW is killed) ─────────────
+let watchedUser   = null;   // customer: { uid, name }
+let knownStatuses = {};     // customer: { fbKey: status }
 
-// ── Outlet state ──────────────────────────────────────────
-let outletWatching   = false;
-let outletKnownKeys  = {};  // { fbKey: status } — all known orders
+let outletWatching  = false;
+let outletKnownKeys = null; // outlet: null = not loaded yet, {} = loaded
 
 let pollTimer = null;
+
+// ── Restore outlet watch state after iOS SW kill ──────────
+// We use the Cache API as persistent storage (localStorage not available in SW)
+const STATE_CACHE = 'burger-sw-state';
+
+async function saveOutletState(watching) {
+  const c = await caches.open(STATE_CACHE);
+  await c.put('outlet_active', new Response(watching ? '1' : '0'));
+}
+
+async function loadOutletState() {
+  try {
+    const c   = await caches.open(STATE_CACHE);
+    const res = await c.match('outlet_active');
+    if (!res) return false;
+    const val = await res.text();
+    return val === '1';
+  } catch(e) { return false; }
+}
 
 // ── Install ───────────────────────────────────────────────
 self.addEventListener('install', event => {
@@ -32,11 +53,21 @@ self.addEventListener('install', event => {
 
 // ── Activate ──────────────────────────────────────────────
 self.addEventListener('activate', event => {
-  event.waitUntil(
-    caches.keys()
-      .then(keys => Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))))
-      .then(() => self.clients.claim())
-  );
+  event.waitUntil((async () => {
+    const keys = await caches.keys();
+    await Promise.all(
+      keys.filter(k => k !== CACHE_NAME && k !== STATE_CACHE).map(k => caches.delete(k))
+    );
+    await self.clients.claim();
+
+    // Restore outlet watching if it was active before SW was killed
+    const wasActive = await loadOutletState();
+    if (wasActive) {
+      outletWatching  = true;
+      outletKnownKeys = null; // will load on first poll
+      startPolling();
+    }
+  })());
 });
 
 // ── Messages from app ─────────────────────────────────────
@@ -46,41 +77,47 @@ self.addEventListener('message', event => {
 
   switch (msg.type) {
 
-    // Customer watching their own orders
     case 'WATCH_ORDERS':
+      // Customer watching their own orders
       watchedUser   = msg.user;
       knownStatuses = msg.statuses || {};
       startPolling();
       break;
 
-    // Customer app is open — just sync statuses so we don't double-notify
     case 'UPDATE_STATUSES':
-      knownStatuses = msg.statuses || {};
+      // App is open — sync so we don't double-notify
+      Object.assign(knownStatuses, msg.statuses || {});
       break;
 
-    // Customer logged out
     case 'STOP_WATCH':
       watchedUser = null;
       if (!outletWatching) stopPolling();
       break;
 
-    // Outlet panel watching for new orders
     case 'WATCH_OUTLET_ORDERS':
-      outletWatching  = true;
-      outletKnownKeys = msg.statuses || {};
+      outletWatching = true;
+      saveOutletState(true);
+      if (msg.fresh || outletKnownKeys === null) {
+        // Fresh login or SW just restarted — load existing orders as baseline
+        // Don't notify for anything we receive on first poll
+        outletKnownKeys = null; // null = "load on next poll, don't notify"
+      } else {
+        // Ongoing sync — merge new keys we know about
+        Object.assign(outletKnownKeys, msg.statuses || {});
+      }
       startPolling();
       break;
 
-    // Outlet logged out
     case 'STOP_OUTLET_WATCH':
       outletWatching  = false;
-      outletKnownKeys = {};
+      outletKnownKeys = null;
+      saveOutletState(false);
       if (!watchedUser) stopPolling();
       break;
   }
 });
 
-// ── Polling control ───────────────────────────────────────
+// ── Polling ───────────────────────────────────────────────
 function startPolling() {
   stopPolling();
   pollAll();
@@ -91,54 +128,71 @@ function stopPolling() {
   if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
 }
 
-// ── Main poll function ────────────────────────────────────
 async function pollAll() {
   if (!watchedUser && !outletWatching) return;
 
+  let data;
   try {
-    const res  = await fetch(`${DB_URL}/orders.json`);
+    const res = await fetch(`${DB_URL}/orders.json`, { cache: 'no-store' });
     if (!res.ok) return;
-    const data = await res.json();
-    if (!data) return;
+    data = await res.json();
+  } catch(e) {
+    console.warn('[SW] Poll failed:', e);
+    return;
+  }
 
-    const entries = Object.entries(data);
+  if (!data) {
+    // No orders at all
+    if (outletKnownKeys === null) outletKnownKeys = {};
+    return;
+  }
 
-    // ── Customer: check for status changes on their orders ──
-    if (watchedUser) {
+  const entries = Object.entries(data);
+
+  // ── Customer notifications ────────────────────────────
+  if (watchedUser) {
+    entries.forEach(([fbKey, order]) => {
+      if (!order?.customer) return;
+      if (order.customer.uid !== watchedUser.uid) return;
+
+      const prev = knownStatuses[fbKey];
+      const curr = order.status;
+      knownStatuses[fbKey] = curr;
+
+      if (prev === curr || !prev) return; // no change or first time seeing
+
+      if (curr === 'preparing' && prev === 'payment_uploaded') {
+        notify(
+          '\uD83D\uDCB8 Payment Verified \u2014 Burger Company',
+          'Order #' + pad(order.queueNum) + ' confirmed! Being prepared now \uD83D\uDC68\u200D\uD83C\uDF73',
+          'customer_prep_' + fbKey
+        );
+      } else if (curr === 'ready') {
+        notify(
+          '\u2705 Order Ready \u2014 Burger Company',
+          'Order #' + pad(order.queueNum) + ' is ready! Head to the main desk \uD83C\uDFC3',
+          'customer_ready_' + fbKey
+        );
+      } else if (curr === 'payment_rejected') {
+        notify(
+          '\u274C Payment Rejected \u2014 Burger Company',
+          'Order #' + pad(order.queueNum) + ' \u2014 please re-upload your screenshot.',
+          'customer_rejected_' + fbKey
+        );
+      }
+    });
+  }
+
+  // ── Outlet notifications ──────────────────────────────
+  if (outletWatching) {
+    if (outletKnownKeys === null) {
+      // First poll after login/restart — load all current as baseline, no notifications
+      outletKnownKeys = {};
       entries.forEach(([fbKey, order]) => {
-        if (!order || !order.customer) return;
-        if (order.customer.uid !== watchedUser.uid) return;
-
-        const prev = knownStatuses[fbKey];
-        const curr = order.status;
-        if (prev === curr) return;
-
-        knownStatuses[fbKey] = curr;
-
-        if (curr === 'preparing' && prev === 'payment_uploaded') {
-          notify(
-            '\uD83D\uDCB8 Payment Verified \u2014 Burger Company',
-            'Order #' + pad(order.queueNum) + ' confirmed! Being prepared now \uD83D\uDC68\u200D\uD83C\uDF73',
-            'prep_' + fbKey
-          );
-        } else if (curr === 'ready') {
-          notify(
-            '\u2705 Order Ready \u2014 Burger Company',
-            'Order #' + pad(order.queueNum) + ' is ready! Head to the main desk \uD83C\uDFC3',
-            'ready_' + fbKey
-          );
-        } else if (curr === 'payment_rejected') {
-          notify(
-            '\u274C Payment Rejected \u2014 Burger Company',
-            'Order #' + pad(order.queueNum) + ' \u2014 please re-upload your payment screenshot.',
-            'rejected_' + fbKey
-          );
-        }
+        if (order) outletKnownKeys[fbKey] = order.status;
       });
-    }
-
-    // ── Outlet: detect brand new orders ──────────────────
-    if (outletWatching) {
+    } else {
+      // Normal poll — check for brand new orders
       entries.forEach(([fbKey, order]) => {
         if (!order) return;
         const isNew = !(fbKey in outletKnownKeys);
@@ -146,45 +200,47 @@ async function pollAll() {
 
         if (isNew && order.status === 'payment_uploaded') {
           const num   = pad(order.queueNum);
-          const name  = (order.customer && order.customer.name) || 'Customer';
+          const name  = order.customer?.name || 'Customer';
           const total = order.total ? '\u20b9' + order.total : '';
-          const items = order.items ? order.items.length + ' item' + (order.items.length !== 1 ? 's' : '') : '';
+          const items = order.items
+            ? order.items.length + ' item' + (order.items.length !== 1 ? 's' : '')
+            : '';
           notify(
             '\uD83D\uDED2 New Order #' + num + ' \u2014 Burger Company',
-            name + ' \u00b7 ' + items + ' ' + total + ' \u2014 Payment uploaded, verify now.',
-            'outlet_order_' + fbKey
+            name + ' \u00b7 ' + items + ' ' + total + '\nPayment uploaded \u2014 tap to verify.',
+            'outlet_new_' + fbKey,
+            true   // strong vibration for outlet
           );
         }
       });
     }
-
-  } catch(e) {
-    console.warn('[SW] Poll error:', e);
   }
 }
 
-function pad(n) { return String(n || '?').padStart(2, '0'); }
+function pad(n) { return String(n ?? '?').padStart(2, '0'); }
 
-function notify(title, body, tag) {
+function notify(title, body, tag, strong = false) {
   self.registration.showNotification(title, {
     body,
     icon    : 'icon-192.png',
     badge   : 'icon-192.png',
     tag,
     renotify: true,
-    vibrate : [200, 100, 200],
+    vibrate : strong ? [300, 100, 300, 100, 300] : [200, 100, 200],
+    requireInteraction: strong,   // outlet notifs stay on screen until dismissed
     data    : { url: self.location.origin }
   });
 }
 
-// ── Notification click: open app ──────────────────────────
+// ── Notification click: focus or open app ─────────────────
 self.addEventListener('notificationclick', event => {
   event.notification.close();
   const url = event.notification.data?.url || self.location.origin;
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
-      for (const c of list) {
-        if (c.url.includes(self.location.origin) && 'focus' in c) return c.focus();
+      for (const client of list) {
+        if (client.url.includes(self.location.origin) && 'focus' in client)
+          return client.focus();
       }
       if (clients.openWindow) return clients.openWindow(url);
     })
@@ -195,14 +251,13 @@ self.addEventListener('notificationclick', event => {
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
   if (!event.request.url.startsWith(self.location.origin)) return;
-  if (event.request.url.includes('firebaseio.com') ||
-      event.request.url.includes('firebase')) return;
+  if (event.request.url.includes('firebase')) return;
 
   event.respondWith(
     caches.match(event.request).then(cached => {
       if (cached) return cached;
       return fetch(event.request).then(response => {
-        if (response && response.status === 200) {
+        if (response?.status === 200) {
           const clone = response.clone();
           caches.open(CACHE_NAME).then(c => c.put(event.request, clone));
         }
