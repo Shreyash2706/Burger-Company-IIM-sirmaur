@@ -590,136 +590,26 @@ input:checked + .toggle-slider:before{transform:translateX(20px);}
 
 /* Toast */
 /* ════════════════════════════════════════
-   MANDATORY SETUP OVERLAY
+   INSTALL APP BUTTON + MODALS
 ════════════════════════════════════════ */
-.setup-overlay{
-  position:fixed;inset:0;z-index:99999;
-  background:var(--char);
-  display:none;align-items:center;justify-content:center;
-  padding:16px;
-  overflow-y:auto;
-}
-.setup-overlay.show{display:flex;}
-.setup-card{
-  width:100%;max-width:380px;
-  background:var(--smoke);
-  border:1px solid rgba(245,166,35,.2);
-  border-radius:20px;
-  padding:28px 24px 24px;
-  display:flex;flex-direction:column;align-items:center;
-  gap:20px;
-}
-.setup-header{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;}
-.setup-logo{font-size:2.8rem;line-height:1;}
-.setup-title{font-size:1.3rem;font-weight:800;color:var(--gold);letter-spacing:2px;font-family:"Bebas Neue",sans-serif;}
-.setup-sub{font-size:.8rem;color:var(--ash);}
-.setup-dots{display:flex;gap:8px;}
-.setup-dot{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.15);transition:background .3s;}
-.setup-dot.active{background:var(--fire);}
-.setup-dot.done{background:var(--leaf);}
-.setup-step{width:100%;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;}
-.setup-step-icon{font-size:2.6rem;}
-.setup-step-title{font-size:1.15rem;font-weight:700;color:var(--cream);}
-.setup-step-desc{font-size:.82rem;color:var(--ash);line-height:1.55;max-width:300px;}
-.setup-primary-btn{
-  width:100%;padding:14px;border:none;border-radius:12px;
-  background:var(--fire);color:#fff;
-  font-size:.95rem;font-weight:700;cursor:pointer;
-  letter-spacing:.5px;
-  transition:opacity .2s;
-}
-.setup-primary-btn:hover{opacity:.88;}
-.setup-primary-btn:disabled{opacity:.45;cursor:not-allowed;}
-.setup-skip-btn{
-  background:none;border:none;
-  color:var(--ash);font-size:.78rem;cursor:pointer;
-  text-decoration:underline;padding:4px;
-}
-.setup-skip-btn:hover{color:var(--cream);}
-.setup-already{
-  display:flex;align-items:center;gap:10px;
-  background:rgba(39,174,96,.1);border:1px solid rgba(39,174,96,.25);
-  border-radius:10px;padding:12px 16px;
-  font-size:.85rem;color:var(--alert);font-weight:600;
-  width:100%;
-}
-.setup-ios-steps{
-  width:100%;display:flex;flex-direction:column;gap:10px;
-  background:rgba(255,255,255,.04);border-radius:12px;padding:14px;
-  text-align:left;
-}
-.setup-ios-row{
-  display:flex;align-items:flex-start;gap:10px;
-  font-size:.83rem;color:var(--cream);line-height:1.4;
-}
-.setup-ios-num{
-  min-width:24px;height:24px;border-radius:50%;
-  background:var(--fire);color:#fff;font-size:.75rem;font-weight:700;
-  display:flex;align-items:center;justify-content:center;flex-shrink:0;
-}
-.setup-notif-preview{
-  width:100%;display:flex;flex-direction:column;gap:8px;
-}
-.setup-notif-item{
-  display:flex;align-items:center;gap:12px;
-  background:rgba(255,255,255,.05);border-radius:10px;
-  padding:10px 14px;text-align:left;
-  font-size:.82rem;
-}
-.setup-notif-item span{font-size:1.4rem;}
-.setup-blocked-msg{
-  width:100%;background:rgba(232,50,10,.08);
-  border:1px solid rgba(232,50,10,.3);
-  border-radius:10px;padding:12px 14px;
-  font-size:.8rem;color:#ff8c7a;text-align:left;
-}
-.setup-ios-notif-tip{
-  width:100%;background:rgba(255,255,255,.05);
-  border-radius:10px;padding:12px 14px;
-  font-size:.8rem;color:var(--ash);text-align:center;line-height:1.5;
-}
-.setup-enter-btn{background:var(--leaf)!important;}
-/* ── Push Notification Permission Banner ── */
-.notif-banner{
-  position:fixed;bottom:80px;left:50%;transform:translateX(-50%);
-  background:linear-gradient(135deg,#1a1208,#241C10);
-  border:1px solid var(--gold);border-radius:14px;
-  padding:14px 18px;width:calc(100% - 32px);max-width:400px;
-  z-index:9999;display:none;flex-direction:column;gap:10px;
-  box-shadow:0 8px 32px rgba(0,0,0,.5);
-}
-.notif-banner.show{display:flex;}
-.notif-banner-title{font-size:.9rem;font-weight:700;color:var(--gold);}
-.notif-banner-desc{font-size:.78rem;color:var(--ash);line-height:1.4;}
-.notif-banner-btns{display:flex;gap:8px;}
-.notif-allow-btn{
-  flex:1;padding:9px;border:none;border-radius:8px;
-  background:var(--fire);color:#fff;font-size:.82rem;font-weight:700;cursor:pointer;
-}
-.notif-later-btn{
-  padding:9px 14px;border:1px solid rgba(255,255,255,.15);border-radius:8px;
-  background:transparent;color:var(--ash);font-size:.82rem;cursor:pointer;
-}
-.notif-ios-tip{
-  font-size:.72rem;color:var(--ash);text-align:center;
-  border-top:1px solid rgba(255,255,255,.08);padding-top:8px;
-}
-/* ── Notification dot on bell icon ── */
-.notif-bell{
-  position:fixed;bottom:90px;right:16px;
-  width:42px;height:42px;border-radius:50%;
-  background:var(--panel);border:1px solid rgba(255,255,255,.1);
-  display:none;align-items:center;justify-content:center;
-  font-size:1.2rem;cursor:pointer;z-index:900;
-  box-shadow:0 4px 12px rgba(0,0,0,.4);
-}
-.notif-bell.show{display:flex;}
-.notif-bell-dot{
-  position:absolute;top:4px;right:4px;
-  width:9px;height:9px;border-radius:50%;
-  background:var(--fire);display:none;
-}
-.notif-bell-dot.active{display:block;}
+.install-app-btn{display:none;align-items:center;gap:5px;background:linear-gradient(135deg,var(--fire),#c45200);color:#fff;border:none;border-radius:20px;padding:6px 12px;font-size:.72rem;font-weight:700;cursor:pointer;letter-spacing:.3px;white-space:nowrap;box-shadow:0 2px 8px rgba(232,50,10,.35);transition:opacity .2s,transform .1s;flex-shrink:0;}
+.install-app-btn:active{transform:scale(.96);}
+.install-app-btn.visible{display:flex;}
+.outlet-install-btn{display:none;align-items:center;gap:5px;background:var(--outlet-accent);color:#000;border:none;border-radius:20px;padding:6px 12px;font-size:.72rem;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;}
+.outlet-install-btn.visible{display:flex;}
+.install-modal-overlay{position:fixed;inset:0;z-index:99990;background:rgba(0,0,0,.78);backdrop-filter:blur(6px);display:none;align-items:flex-end;justify-content:center;}
+.install-modal-overlay.show{display:flex;}
+.install-modal{width:100%;max-width:480px;background:var(--smoke);border:1px solid rgba(245,166,35,.2);border-radius:20px 20px 0 0;padding:20px 20px 36px;display:flex;flex-direction:column;gap:14px;animation:slideUp .25s ease;}
+@keyframes slideUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
+.install-modal-handle{width:40px;height:4px;border-radius:2px;background:rgba(255,255,255,.18);margin:0 auto -4px;}
+.install-modal-title{font-family:'Bebas Neue',sans-serif;font-size:1.4rem;color:var(--gold);letter-spacing:2px;text-align:center;}
+.install-modal-sub{font-size:.82rem;color:var(--ash);text-align:center;line-height:1.5;}
+.install-steps{display:flex;flex-direction:column;gap:8px;}
+.install-step-row{display:flex;align-items:flex-start;gap:12px;background:rgba(255,255,255,.04);border-radius:10px;padding:10px 13px;font-size:.83rem;color:var(--cream);line-height:1.45;}
+.install-step-num{min-width:24px;height:24px;border-radius:50%;background:var(--fire);color:#fff;font-size:.75rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.install-modal-cta{width:100%;padding:13px;border:none;border-radius:11px;background:var(--fire);color:#fff;font-size:.93rem;font-weight:700;cursor:pointer;letter-spacing:.5px;}
+.install-modal-close{background:none;border:1px solid rgba(255,255,255,.12);color:var(--ash);border-radius:10px;padding:10px;font-size:.82rem;cursor:pointer;text-align:center;}
+.notif-preview-item{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.04);border-radius:10px;padding:10px 13px;font-size:.82rem;}
 
 .toast{
   position:fixed;top:62px;left:50%;transform:translateX(-50%) translateY(-20px);
@@ -1304,6 +1194,8 @@ input:checked + .toggle-slider:before{transform:translateX(20px);}
 }
 </style>
 <!-- Firebase loaded in head so it's always ready before any script runs -->
+
+<!-- Firebase in head for Safari -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 </head>
@@ -1450,9 +1342,12 @@ input:checked + .toggle-slider:before{transform:translateX(20px);}
   <!-- TOP NAV -->
   <div class="top-nav">
     <div class="brand">🍔 BURGER<span>.</span>CO</div>
-    <div class="user-chip" onclick="toggleProfileDrop()" id="user-chip">
-      <div class="user-avatar" id="user-avatar">?</div>
-      <div class="user-chip-name" id="user-chip-name">---</div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <button class="install-app-btn" id="install-app-btn" onclick="showInstallModal()">⊕ Install App</button>
+      <div class="user-chip" onclick="toggleProfileDrop()" id="user-chip">
+        <div class="user-avatar" id="user-avatar">?</div>
+        <div class="user-chip-name" id="user-chip-name">---</div>
+      </div>
     </div>
   </div>
 
@@ -1677,7 +1572,10 @@ input:checked + .toggle-slider:before{transform:translateX(20px);}
 
   <div class="outlet-nav">
     <div class="outlet-brand">🍳 OUTLET<span> PANEL</span></div>
-    <button class="outlet-signout" onclick="outletLogout()">⏏ SIGN OUT</button>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <button class="outlet-install-btn" id="outlet-install-btn" onclick="showInstallModal()">⊕ Install</button>
+      <button class="outlet-signout" onclick="outletLogout()">⏏ SIGN OUT</button>
+    </div>
   </div>
 
   <div class="outlet-hero">
@@ -1795,131 +1693,63 @@ input:checked + .toggle-slider:before{transform:translateX(20px);}
 <div class="toast" id="toast"></div>
 
 <!-- Push Notification Permission Banner (kept for fallback) -->
-<div class="notif-banner" id="notif-banner" style="display:none!important;"></div>
-
-<!-- ═══════════════════════════════════════
-     MANDATORY SETUP SCREEN
-     Shown after every login until both
-     install + notifications are done
-══════════════════════════════════════ -->
-<div class="setup-overlay" id="setup-overlay">
-  <div class="setup-card">
-
-    <!-- Header -->
-    <div class="setup-header">
-      <div class="setup-logo">🍔</div>
-      <div class="setup-title">BURGER COMPANY</div>
-      <div class="setup-sub">Quick setup before you begin</div>
+<!-- Install App Modal -->
+<div class="install-modal-overlay" id="install-modal-overlay" onclick="handleInstallOverlayClick(event)">
+  <div class="install-modal">
+    <div class="install-modal-handle"></div>
+    <div id="imod-android" style="display:none;">
+      <div class="install-modal-title">📲 Install Burger Company</div>
+      <div class="install-modal-sub">Add to your home screen for instant access.</div>
+      <button class="install-modal-cta" onclick="triggerInstall()">＋ Add to Home Screen</button>
+      <button class="install-modal-close" onclick="closeInstallModal()">Maybe later</button>
     </div>
-
-    <!-- Progress dots -->
-    <div class="setup-dots">
-      <div class="setup-dot active" id="sdot-1"></div>
-      <div class="setup-dot" id="sdot-2"></div>
+    <div id="imod-ios-chrome" style="display:none;">
+      <div class="install-modal-title">🧭 Open in Safari First</div>
+      <div class="install-modal-sub">Chrome on iPhone does not support home screen install. Open this page in Safari instead.</div>
+      <div class="install-steps">
+        <div class="install-step-row"><span class="install-step-num">1</span>Tap the button below to copy this page link</div>
+        <div class="install-step-row"><span class="install-step-num">2</span>Open <strong>Safari</strong> and paste the link in the address bar</div>
+        <div class="install-step-row"><span class="install-step-num">3</span>Tap <strong>Share ⎋ → Add to Home Screen → Add</strong></div>
+      </div>
+      <button class="install-modal-cta" id="copy-url-btn" onclick="copyURLAndClose()">📋 Copy Page Link</button>
+      <button class="install-modal-close" onclick="closeInstallModal()">Cancel</button>
     </div>
-
-    <!-- STEP 1: Install App -->
-    <div class="setup-step" id="setup-step-1">
-      <div class="setup-step-icon">📲</div>
-      <div class="setup-step-title">Install the App</div>
-      <div class="setup-step-desc">
-        Add Burger Company to your home screen for instant access — just like a real app.
+    <div id="imod-ios-safari" style="display:none;">
+      <div class="install-modal-title">📱 Add to Home Screen</div>
+      <div class="install-modal-sub">Install Burger Company as an app on your iPhone:</div>
+      <div class="install-steps">
+        <div class="install-step-row"><span class="install-step-num">1</span>Tap the <strong>Share</strong> button <span style="font-size:1.1rem;">⎋</span> at the bottom of Safari</div>
+        <div class="install-step-row"><span class="install-step-num">2</span>Scroll down and tap <strong>"Add to Home Screen"</strong></div>
+        <div class="install-step-row"><span class="install-step-num">3</span>Tap <strong>Add</strong> — the app icon appears on your home screen</div>
       </div>
-
-      <!-- Android install (shows when beforeinstallprompt fires) -->
-      <button class="setup-primary-btn" id="install-btn" onclick="triggerInstall()" style="display:none;">
-        ＋ Add to Home Screen
-      </button>
-
-      <!-- iOS Chrome — must switch to Safari -->
-      <div class="setup-ios-steps" id="ios-chrome-warning" style="display:none;">
-        <div class="setup-ios-row" style="flex-direction:column;align-items:center;text-align:center;gap:8px;">
-          <span style="font-size:2rem;">🧭</span>
-          <div>
-            <strong style="color:var(--gold);">Please open this page in Safari</strong>
-            <div style="margin-top:6px;font-size:.8rem;color:var(--ash);">Chrome on iPhone doesn't support home screen install. Copy the link and open it in <strong>Safari</strong> to continue.</div>
-          </div>
-        </div>
-        <div class="setup-ios-row">
-          <span class="setup-ios-num">1</span>Tap the address bar and <strong>copy the URL</strong>
-        </div>
-        <div class="setup-ios-row">
-          <span class="setup-ios-num">2</span>Open <strong>Safari</strong> and paste the URL
-        </div>
-        <div class="setup-ios-row">
-          <span class="setup-ios-num">3</span>Tap <strong>Share ⎋ → Add to Home Screen</strong>
-        </div>
-      </div>
-
-      <!-- iOS Safari manual instructions -->
-      <div class="setup-ios-steps" id="ios-install-steps" style="display:none;">
-        <div class="setup-ios-row"><span class="setup-ios-num">1</span>Tap the <strong>Share</strong> button <span style="font-size:1.1rem;">⎋</span> at the bottom of Safari</div>
-        <div class="setup-ios-row"><span class="setup-ios-num">2</span>Scroll down and tap <strong>"Add to Home Screen"</strong></div>
-        <div class="setup-ios-row"><span class="setup-ios-num">3</span>Tap <strong>Add</strong> — then reopen from your home screen</div>
-      </div>
-
-      <!-- Already installed / unsupported -->
-      <div class="setup-already" id="already-installed" style="display:none;">
-        <span style="font-size:1.5rem;">✅</span>
-        <span>App already installed on this device!</span>
-      </div>
-
-      <button class="setup-skip-btn" id="install-skip-btn" onclick="completeInstallStep()">
-        Already installed — Continue →
-      </button>
+      <button class="install-modal-close" style="background:var(--fire);color:#fff;border:none;font-weight:700;" onclick="closeInstallModal()">Got it!</button>
     </div>
-
-    <!-- STEP 2: Enable Notifications -->
-    <div class="setup-step" id="setup-step-2" style="display:none;">
-      <div class="setup-step-icon">🔔</div>
-      <div class="setup-step-title">Enable Notifications</div>
-      <div class="setup-step-desc">
-        Get instant alerts when your payment is verified and when your order is ready for pickup — even when your screen is off.
+    <div id="imod-installed" style="display:none;">
+      <div style="text-align:center;padding:8px 0;">
+        <div style="font-size:2.8rem;">✅</div>
+        <div class="install-modal-title" style="margin-top:8px;">Already Installed!</div>
+        <div class="install-modal-sub">Burger Company is already on your home screen.</div>
       </div>
-
-      <div class="setup-notif-preview">
-        <div class="setup-notif-item">
-          <span>💸</span>
-          <div>
-            <div style="font-weight:700;font-size:.82rem;">Payment Verified</div>
-            <div style="font-size:.75rem;color:var(--ash);">Your order is being prepared 👨‍🍳</div>
-          </div>
-        </div>
-        <div class="setup-notif-item">
-          <span>✅</span>
-          <div>
-            <div style="font-weight:700;font-size:.82rem;">Order Ready!</div>
-            <div style="font-size:.75rem;color:var(--ash);">Head to the main desk to collect 🏃</div>
-          </div>
-        </div>
-      </div>
-
-      <button class="setup-primary-btn" id="notif-enable-btn" onclick="setupRequestNotif()">
-        🔔 Enable Notifications
-      </button>
-
-      <!-- Shown after permission granted -->
-      <div class="setup-already" id="notif-granted-msg" style="display:none;">
-        <span style="font-size:1.5rem;">✅</span>
-        <span>Notifications enabled!</span>
-      </div>
-
-      <!-- Shown if blocked -->
-      <div class="setup-blocked-msg" id="notif-blocked-msg" style="display:none;">
-        <div>⚠️ Notifications are blocked in your browser settings.</div>
-        <div style="margin-top:6px;font-size:.75rem;">To fix: tap the lock/info icon in your browser address bar → Site Settings → Notifications → Allow</div>
-      </div>
-
-      <!-- iOS not installed tip -->
-      <div class="setup-ios-notif-tip" id="ios-notif-tip" style="display:none;">
-        📱 On iPhone, notifications only work after installing the app to your home screen (Step 1). Please reopen from home screen first.
-      </div>
-
-      <button class="setup-primary-btn setup-enter-btn" id="setup-enter-btn" onclick="completeSetup()" style="display:none;margin-top:12px;">
-        Let's Go! 🍔
-      </button>
+      <button class="install-modal-close" onclick="closeInstallModal()">Close</button>
     </div>
+  </div>
+</div>
 
+<!-- Notification Modal (shown once after login in installed app) -->
+<div class="install-modal-overlay" id="notif-modal-overlay">
+  <div class="install-modal">
+    <div class="install-modal-handle"></div>
+    <div style="text-align:center;">
+      <div style="font-size:2.4rem;">🔔</div>
+      <div class="install-modal-title" style="margin-top:8px;">Enable Notifications</div>
+      <div class="install-modal-sub">Get instant alerts for payment verification and order ready — even with screen off.</div>
+    </div>
+    <div class="install-steps">
+      <div class="notif-preview-item"><span style="font-size:1.3rem;">💸</span><div><div style="font-weight:700;font-size:.82rem;">Payment Verified</div><div style="font-size:.74rem;color:var(--ash);">Your order is being prepared 👨‍🍳</div></div></div>
+      <div class="notif-preview-item"><span style="font-size:1.3rem;">✅</span><div><div style="font-weight:700;font-size:.82rem;">Order Ready!</div><div style="font-size:.74rem;color:var(--ash);">Head to the main desk to collect 🏃</div></div></div>
+    </div>
+    <button class="install-modal-cta" onclick="notifModalAllow()">🔔 Allow Notifications</button>
+    <button class="install-modal-close" onclick="notifModalDismiss()">Not now</button>
   </div>
 </div>
 
@@ -2155,54 +1985,87 @@ async function doRegister() {
   if (!name || name.length < 2) { err.textContent='Please enter your full name.'; err.classList.add('show'); return; }
   if (!/^\d{10}$/.test(phone))  { err.textContent='Enter a valid 10-digit mobile number.'; err.classList.add('show'); return; }
 
-  // Loading state
   err.classList.remove('show');
-  if (btn) { btn.disabled = true; btn.textContent = 'Please wait…'; }
+  if (btn) { btn.disabled=true; btn.textContent='Please wait…'; }
 
   try {
-    // Check if phone already registered in Firebase
     const snap = await get(fbUserRef(phone));
     if (snap.exists()) {
-      err.textContent='Account already exists. Please sign in.'; err.classList.add('show');
-      return;
+      err.textContent='Account already exists. Please sign in.';
+      err.classList.add('show'); return;
     }
-
     const uid  = generateUID(name);
     const user = { uid, name, phone };
-
-    // Save to Firebase
     await set(fbUserRef(phone), user);
-
-    // Save to this device's local storage
     saveDeviceUser(user);
-
     currentUser = user;
     document.getElementById('new-uid-display').textContent = uid;
     document.getElementById('new-uid-name').textContent = name + ' · +91 ' + phone;
     showCAuth('cauth-success');
-
   } catch(e) {
     console.error('Register error:', e);
-    err.textContent = 'Connection error. Please check your internet and try again.';
+    err.textContent = 'Connection error. Check your internet and try again.';
     err.classList.add('show');
   } finally {
-    if (btn) { btn.disabled = false; btn.textContent = 'CREATE MY ID →'; }
+    if (btn) { btn.disabled=false; btn.textContent='CREATE MY ID →'; }
+  }
+}
+
+async function doLogin() {
+  const phone = document.getElementById('login-phone').value.trim();
+  const err   = document.getElementById('login-error');
+  const btn   = document.querySelector('#cauth-login .ac-btn');
+
+  if (!/^\d{10}$/.test(phone)) { err.textContent='Enter a valid 10-digit number.'; err.classList.add('show'); return; }
+
+  err.classList.remove('show');
+  if (btn) { btn.disabled=true; btn.textContent='Signing in…'; }
+
+  try {
+    const snap = await get(fbUserRef(phone));
+    if (!snap.exists()) {
+      err.textContent='No account found. Please register first.';
+      err.classList.add('show'); return;
+    }
+    currentUser = snap.val();
+    saveDeviceUser(currentUser);
+    enterCustomerApp();
+  } catch(e) {
+    console.error('Login error:', e);
+    err.textContent = 'Connection error. Check your internet and try again.';
+    err.classList.add('show');
+  } finally {
+    if (btn) { btn.disabled=false; btn.textContent='SIGN IN →'; }
+  }
+}
+
+async function loginAs(phone) {
+  try {
+    const snap = await get(fbUserRef(phone));
+    if (!snap.exists()) { removeDeviceUser(phone); loadSavedUsers(); return; }
+    currentUser = snap.val();
+    saveDeviceUser(currentUser);
+    enterCustomerApp();
+  } catch(e) {
+    console.error('LoginAs error:', e);
+    const list = document.getElementById('saved-users-list');
+    if (list) list.innerHTML = '<div style="color:#ff6b6b;font-size:.78rem;padding:8px 0;text-align:center;">Connection error. Check internet and try again.</div>';
   }
 }
 
 /* ═════════════════════════════════════
    DEVICE-LOCAL USER STORAGE
-   Saved accounts are per-device (localStorage)
-   Firebase is only used for uniqueness check & data fetch
+   Saved accounts stored in localStorage
+   Firebase only used for uniqueness check
 ═════════════════════════════════════ */
 function getDeviceUsers() {
   try { return JSON.parse(localStorage.getItem('bc_device_users') || '[]'); }
   catch(e) { return []; }
 }
 function saveDeviceUser(user) {
-  const users = getDeviceUsers().filter(u => u.phone !== user.phone); // dedup
-  users.unshift(user); // most recent first
-  localStorage.setItem('bc_device_users', JSON.stringify(users.slice(0, 10))); // keep max 10
+  const users = getDeviceUsers().filter(u => u.phone !== user.phone);
+  users.unshift(user);
+  localStorage.setItem('bc_device_users', JSON.stringify(users.slice(0, 10)));
 }
 function removeDeviceUser(phone) {
   const users = getDeviceUsers().filter(u => u.phone !== phone);
@@ -2227,9 +2090,9 @@ function loadSavedUsers() {
         <button onclick="event.stopPropagation();forgetAccount('${u.phone}')"
           style="background:none;border:1px solid rgba(255,255,255,.15);color:var(--ash);
                  border-radius:6px;padding:3px 8px;font-size:.65rem;cursor:pointer;">
-          ✕ forget
+          \u2715 forget
         </button>
-        <span style="color:var(--gold);">→</span>
+        <span style="color:var(--gold);">\u2192</span>
       </div>
     </div>`).join('');
 }
@@ -2239,53 +2102,7 @@ function forgetAccount(phone) {
   loadSavedUsers();
 }
 
-async function doLogin() {
-  const phone = document.getElementById('login-phone').value.trim();
-  const err   = document.getElementById('login-error');
-  const btn   = document.querySelector('#cauth-login .ac-btn');
-
-  if (!/^\d{10}$/.test(phone)) { err.textContent='Enter a valid 10-digit number.'; err.classList.add('show'); return; }
-
-  // Loading state
-  err.classList.remove('show');
-  if (btn) { btn.disabled = true; btn.textContent = 'Signing in…'; }
-
-  try {
-    const snap = await get(fbUserRef(phone));
-    if (!snap.exists()) {
-      err.textContent='No account found. Please register first.'; err.classList.add('show');
-      return;
-    }
-    currentUser = snap.val();
-    saveDeviceUser(currentUser);
-    enterCustomerApp();
-
-  } catch(e) {
-    console.error('Login error:', e);
-    err.textContent = 'Connection error. Please check your internet and try again.';
-    err.classList.add('show');
-  } finally {
-    if (btn) { btn.disabled = false; btn.textContent = 'SIGN IN →'; }
-  }
-}
-
-async function loginAs(phone) {
-  try {
-    const snap = await get(fbUserRef(phone));
-    if (!snap.exists()) {
-      removeDeviceUser(phone);
-      loadSavedUsers();
-      return;
-    }
-    currentUser = snap.val();
-    saveDeviceUser(currentUser);
-    enterCustomerApp();
-  } catch(e) {
-    console.error('LoginAs error:', e);
-    const list = document.getElementById('saved-users-list');
-    if (list) list.innerHTML = '<div style="color:#ff6b6b;font-size:.78rem;padding:8px 0;text-align:center;">Connection error. Check internet and try again.</div>';
-  }
-}
+window.forgetAccount = forgetAccount;
 
 function enterCustomerApp() {
   if (!currentUser) { console.error('enterCustomerApp: no currentUser'); return; }
@@ -3294,16 +3111,10 @@ function showToast(msg, type='') {
   setTimeout(() => t.classList.remove('show'), 3000);
 }
 
-/* ═════════════════════════════════════
-   PUSH NOTIFICATIONS + MANDATORY SETUP
-   ─────────────────────────────────────
-   Flow: login → showSetupScreen()
-     Step 1: Install to home screen
-     Step 2: Enable notifications
-     → completeSetup() → enter app
-═════════════════════════════════════ */
+/* ═══════════════════════════════════
+   INSTALL APP + PUSH NOTIFICATIONS
+═══════════════════════════════════ */
 
-// Track pushed notifications (prevent duplicates)
 const pushedNotifs = new Set(
   JSON.parse(localStorage.getItem('bc_pushed_notifs') || '[]')
 );
@@ -3311,14 +3122,9 @@ function savePushedNotifs() {
   localStorage.setItem('bc_pushed_notifs', JSON.stringify([...pushedNotifs].slice(-50)));
 }
 
-// Platform helpers
 function isIOS() { return /iphone|ipad|ipod/i.test(navigator.userAgent); }
-function isIOSChrome() {
-  // Chrome on iOS identifies itself with 'CriOS' in UA
-  return isIOS() && /CriOS/i.test(navigator.userAgent);
-}
+function isIOSChrome() { return isIOS() && /CriOS/i.test(navigator.userAgent); }
 function isIOSSafari() {
-  // Safari on iOS: has 'Safari' but NOT 'CriOS' or 'FxiOS' or 'OPiOS'
   return isIOS() && /Safari/i.test(navigator.userAgent)
     && !/CriOS|FxiOS|OPiOS|mercury/i.test(navigator.userAgent);
 }
@@ -3328,268 +3134,122 @@ function isInStandaloneMode() {
 }
 function notifSupported() { return 'Notification' in window && 'serviceWorker' in navigator; }
 
-// ── Install prompt (Android/Chrome) ──────────────────────
 let deferredInstallPrompt = null;
 window.addEventListener('beforeinstallprompt', e => {
   e.preventDefault();
   deferredInstallPrompt = e;
-  // If setup screen is already visible, show the install button
-  const btn = document.getElementById('install-btn');
-  if (btn) btn.style.display = 'block';
+  showInstallButtons();
 });
+
+function initInstallButton() {
+  if (isInStandaloneMode()) return;
+  if (isIOS() || deferredInstallPrompt) showInstallButtons();
+}
+function showInstallButtons() {
+  document.querySelectorAll('.install-app-btn,.outlet-install-btn')
+    .forEach(b => b.classList.add('visible'));
+}
+function hideInstallButtons() {
+  document.querySelectorAll('.install-app-btn,.outlet-install-btn')
+    .forEach(b => b.classList.remove('visible'));
+}
+
+function showInstallModal() {
+  ['imod-android','imod-ios-chrome','imod-ios-safari','imod-installed']
+    .forEach(id => { const el=document.getElementById(id); if(el) el.style.display='none'; });
+  let panel;
+  if (isInStandaloneMode())        panel='imod-installed';
+  else if (isIOSChrome())          panel='imod-ios-chrome';
+  else if (isIOSSafari())          panel='imod-ios-safari';
+  else if (deferredInstallPrompt)  panel='imod-android';
+  else                             panel='imod-installed';
+  const el=document.getElementById(panel);
+  if(el) el.style.display='block';
+  document.getElementById('install-modal-overlay').classList.add('show');
+}
+function closeInstallModal() {
+  document.getElementById('install-modal-overlay').classList.remove('show');
+}
+function handleInstallOverlayClick(e) {
+  if (e.target===document.getElementById('install-modal-overlay')) closeInstallModal();
+}
 
 async function triggerInstall() {
   if (!deferredInstallPrompt) return;
+  closeInstallModal();
   deferredInstallPrompt.prompt();
   const { outcome } = await deferredInstallPrompt.userChoice;
   deferredInstallPrompt = null;
-  if (outcome === 'accepted') {
-    completeInstallStep();
-  }
+  if (outcome==='accepted') hideInstallButtons();
 }
 
-// ── Setup screen control ──────────────────────────────────
-let _pendingAppEntry = null; // 'customer' or 'outlet'
+async function copyURLAndClose() {
+  const btn = document.getElementById('copy-url-btn');
+  try { await navigator.clipboard.writeText(location.href); }
+  catch(e) {
+    const ta=document.createElement('textarea');
+    ta.value=location.href; document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta);
+  }
+  if(btn){ btn.textContent='\u2705 Copied! Now open Safari'; btn.style.background='var(--leaf)'; }
+}
 
 function showSetupScreen(entryFn) {
-  // ── iOS Safari browser (NOT installed to home screen) ──
-  // Notifications and install API both unavailable.
-  // Skip setup entirely — just let them in.
-  if (isIOSSafari() && !isInStandaloneMode()) {
-    entryFn();
-    return;
-  }
-
-  // ── iOS Chrome browser ──
-  // Can't install from Chrome on iPhone.
-  // Show a one-time informational screen, then let them in.
-  if (isIOSChrome() && !isInStandaloneMode()) {
-    const shownChromeTip = localStorage.getItem('bc_chrome_tip_shown');
-    if (shownChromeTip) { entryFn(); return; }
-    _pendingAppEntry = entryFn;
-    document.getElementById('setup-overlay').classList.add('show');
-    setupStep1UI();
-    return;
-  }
-
-  // ── Already fully set up ──
-  if (Notification.permission === 'granted' && isInStandaloneMode()) {
+  entryFn();
+  initInstallButton();
+  if (isInStandaloneMode() && notifSupported() && Notification.permission==='default') {
+    if (!localStorage.getItem('bc_notif_asked')) setTimeout(showNotifModal, 1500);
+  } else if (Notification.permission==='granted') {
     registerNotifSW();
-    localStorage.setItem('bc_setup_done', '1');
-    entryFn();
-    return;
-  }
-
-  // ── Already set up before + notifications granted ──
-  const setupDone = localStorage.getItem('bc_setup_done');
-  if (setupDone && Notification.permission === 'granted') {
-    registerNotifSW();
-    entryFn();
-    return;
-  }
-
-  // ── Show setup screen ──
-  _pendingAppEntry = entryFn;
-  document.getElementById('setup-overlay').classList.add('show');
-  setupStep1UI();
-}
-
-function setupStep1UI() {
-  // Show step 1, hide step 2
-  document.getElementById('setup-step-1').style.display = 'flex';
-  document.getElementById('setup-step-2').style.display = 'none';
-  document.getElementById('sdot-1').classList.add('active');
-  document.getElementById('sdot-2').classList.remove('active');
-
-  const installBtn    = document.getElementById('install-btn');
-  const iosSteps      = document.getElementById('ios-install-steps');
-  const alreadyDiv    = document.getElementById('already-installed');
-  const skipBtn       = document.getElementById('install-skip-btn');
-
-  // Already installed as PWA
-  if (isInStandaloneMode()) {
-    alreadyDiv.style.display  = 'flex';
-    installBtn.style.display  = 'none';
-    iosSteps.style.display    = 'none';
-    skipBtn.textContent       = 'Continue →';
-    return;
-  }
-
-  // iOS Chrome — can't install from Chrome, tell them to use Safari
-  if (isIOSChrome()) {
-    document.getElementById('ios-chrome-warning').style.display = 'block';
-    iosSteps.style.display   = 'none';
-    installBtn.style.display = 'none';
-    skipBtn.textContent      = "I'll switch to Safari later — Continue →";
-    skipBtn.style.color      = 'rgba(255,255,255,.35)';
-    return;
-  }
-
-  // iOS Safari browser — show manual Add to Home Screen steps
-  if (isIOSSafari()) {
-    iosSteps.style.display   = 'block';
-    installBtn.style.display = 'none';
-    skipBtn.textContent      = 'Done — Continue →';
-    return;
-  }
-
-  // Other iOS browser (Firefox, Opera etc) — generic message
-  if (isIOS()) {
-    iosSteps.style.display   = 'block';
-    installBtn.style.display = 'none';
-    skipBtn.textContent      = 'Done — Continue →';
-    return;
-  }
-
-  // Android/Chrome — show native prompt button if available
-  if (deferredInstallPrompt) {
-    installBtn.style.display = 'block';
-    skipBtn.style.display    = 'block';
-  } else {
-    // App already installed or browser doesn't support prompt
-    alreadyDiv.style.display = 'flex';
-    skipBtn.textContent      = 'Continue →';
   }
 }
 
-function completeInstallStep() {
-  // If iOS Chrome, mark tip as shown and go straight in
-  if (isIOSChrome() && !isInStandaloneMode()) {
-    localStorage.setItem('bc_chrome_tip_shown', '1');
-    document.getElementById('setup-overlay').classList.remove('show');
-    if (_pendingAppEntry) { _pendingAppEntry(); _pendingAppEntry = null; }
-    return;
-  }
-
-  // Animate dot 1 → done, dot 2 → active
-  document.getElementById('sdot-1').classList.remove('active');
-  document.getElementById('sdot-1').classList.add('done');
-  document.getElementById('sdot-2').classList.add('active');
-
-  // Transition to step 2
-  document.getElementById('setup-step-1').style.display = 'none';
-  document.getElementById('setup-step-2').style.display = 'flex';
-
-  setupStep2UI();
+function showNotifModal() {
+  const o=document.getElementById('notif-modal-overlay'); if(o) o.classList.add('show');
 }
-
-function setupStep2UI() {
-  const enableBtn    = document.getElementById('notif-enable-btn');
-  const grantedMsg   = document.getElementById('notif-granted-msg');
-  const blockedMsg   = document.getElementById('notif-blocked-msg');
-  const iosTip       = document.getElementById('ios-notif-tip');
-  const enterBtn     = document.getElementById('setup-enter-btn');
-
-  // Reset all
-  enableBtn.style.display  = 'block';
-  grantedMsg.style.display = 'none';
-  blockedMsg.style.display = 'none';
-  iosTip.style.display     = 'none';
-  enterBtn.style.display   = 'none';
-
-  if (Notification.permission === 'granted') {
-    // Already granted — skip straight to enter
-    enableBtn.style.display  = 'none';
-    grantedMsg.style.display = 'flex';
-    enterBtn.style.display   = 'block';
-    registerNotifSW();
-    return;
-  }
-
-  if (Notification.permission === 'denied') {
-    enableBtn.style.display  = 'none';
-    blockedMsg.style.display = 'block';
-    enterBtn.style.display   = 'block'; // let them in but warn
-    enterBtn.textContent     = 'Continue without notifications →';
-    enterBtn.style.background = 'rgba(255,255,255,.1)';
-    return;
-  }
-
-  // Notifications not supported at all (very old browser)
-  if (!('Notification' in window)) {
-    enableBtn.style.display = 'none';
-    enterBtn.style.display  = 'block';
-    enterBtn.textContent    = 'Continue →';
-    enterBtn.style.background = 'rgba(255,255,255,.1)';
-    return;
-  }
-}
-
-async function setupRequestNotif() {
-  const enableBtn  = document.getElementById('notif-enable-btn');
-  const grantedMsg = document.getElementById('notif-granted-msg');
-  const blockedMsg = document.getElementById('notif-blocked-msg');
-  const enterBtn   = document.getElementById('setup-enter-btn');
-
-  enableBtn.disabled   = true;
-  enableBtn.textContent = 'Requesting…';
-
+async function notifModalAllow() {
+  const o=document.getElementById('notif-modal-overlay'); if(o) o.classList.remove('show');
+  localStorage.setItem('bc_notif_asked','1');
+  if (!notifSupported()) return;
   const perm = await Notification.requestPermission();
-
-  if (perm === 'granted') {
-    registerNotifSW();
-    enableBtn.style.display  = 'none';
-    grantedMsg.style.display = 'flex';
-    enterBtn.style.display   = 'block';
-    enterBtn.textContent     = "Let's Go! 🍔";
-  } else if (perm === 'denied') {
-    enableBtn.style.display  = 'none';
-    blockedMsg.style.display = 'block';
-    enterBtn.style.display   = 'block';
-    enterBtn.textContent     = 'Continue without notifications →';
-    enterBtn.style.background = 'rgba(255,255,255,.1)';
-  } else {
-    // dismissed
-    enableBtn.disabled    = false;
-    enableBtn.textContent = '🔔 Enable Notifications';
-  }
+  if (perm==='granted') { registerNotifSW(); showToast('\U0001F514 Notifications enabled!',''); }
 }
-
-function completeSetup() {
-  localStorage.setItem('bc_setup_done', '1');
-  document.getElementById('setup-overlay').classList.remove('show');
-  if (_pendingAppEntry) {
-    _pendingAppEntry();
-    _pendingAppEntry = null;
-  }
+function notifModalDismiss() {
+  const o=document.getElementById('notif-modal-overlay'); if(o) o.classList.remove('show');
+  localStorage.setItem('bc_notif_asked','1');
 }
 
 async function registerNotifSW() {
   if (!('serviceWorker' in navigator)) return;
-  try {
-    const reg = await navigator.serviceWorker.register('sw.js');
-    console.log('[BC] SW registered:', reg.scope);
-  } catch(e) { console.warn('[BC] SW failed:', e); }
+  try { await navigator.serviceWorker.register('sw.js'); }
+  catch(e) { console.warn('[BC] SW:',e); }
 }
 
-// ── Send push notification ────────────────────────────────
 function sendPushNotif(title, body, tag) {
-  if (!isInStandaloneMode()) return;  // only fire when installed as app, not in browser
+  if (!isInStandaloneMode()) return;
   if (!notifSupported()) return;
-  if (Notification.permission !== 'granted') return;
+  if (Notification.permission!=='granted') return;
   if (pushedNotifs.has(tag)) return;
-
-  pushedNotifs.add(tag);
-  savePushedNotifs();
-
+  pushedNotifs.add(tag); savePushedNotifs();
   navigator.serviceWorker.ready.then(reg => {
-    reg.showNotification(title, {
-      body, icon: 'icon-192.png', badge: 'icon-192.png',
-      tag, renotify: false, vibrate: [200, 100, 200],
-      data: { url: location.href }
+    reg.showNotification(title,{
+      body, icon:'icon-192.png', badge:'icon-192.png',
+      tag, renotify:false, vibrate:[200,100,200],
+      data:{url:location.href}
     });
-  }).catch(() => {
-    new Notification(title, { body, icon: 'icon-192.png', tag });
-  });
+  }).catch(()=>{ try{new Notification(title,{body,icon:'icon-192.png',tag});}catch(e){} });
 }
 
-// Expose to window
-window.triggerInstall       = triggerInstall;
-window.completeInstallStep  = completeInstallStep;
-window.setupRequestNotif    = setupRequestNotif;
-window.completeSetup        = completeSetup;
-window.requestNotifPermission = setupRequestNotif;
-window.dismissNotifBanner   = () => {};
+window.showInstallModal          = showInstallModal;
+window.closeInstallModal         = closeInstallModal;
+window.handleInstallOverlayClick = handleInstallOverlayClick;
+window.triggerInstall            = triggerInstall;
+window.copyURLAndClose           = copyURLAndClose;
+window.notifModalAllow           = notifModalAllow;
+window.notifModalDismiss         = notifModalDismiss;
+window.requestNotifPermission    = notifModalAllow;
+window.dismissNotifBanner        = () => {};
 </script>
 </body>
 </html>
