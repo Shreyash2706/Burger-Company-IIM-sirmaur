@@ -1303,6 +1303,9 @@ input:checked + .toggle-slider:before{transform:translateX(20px);}
   letter-spacing:1px;cursor:pointer;border:none;
 }
 </style>
+<!-- Firebase loaded in head so it's always ready before any script runs -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 </head>
 <body>
 
@@ -1920,8 +1923,7 @@ input:checked + .toggle-slider:before{transform:translateX(20px);}
   </div>
 </div>
 
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
 <script>
 // ── Firebase compat shim — maps modular-style calls to compat SDK ──
 function ref(db, path) { return path ? db.ref(path) : db.ref(); }
@@ -2148,30 +2150,44 @@ async function doRegister() {
   const name  = document.getElementById('reg-name').value.trim();
   const phone = document.getElementById('reg-phone').value.trim();
   const err   = document.getElementById('reg-error');
+  const btn   = document.querySelector('#cauth-register .ac-btn');
 
   if (!name || name.length < 2) { err.textContent='Please enter your full name.'; err.classList.add('show'); return; }
   if (!/^\d{10}$/.test(phone))  { err.textContent='Enter a valid 10-digit mobile number.'; err.classList.add('show'); return; }
 
-  // Check if phone already registered in Firebase
-  const snap = await get(fbUserRef(phone));
-  if (snap.exists()) {
-    err.textContent='Account already exists. Please sign in.'; err.classList.add('show'); return;
-  }
+  // Loading state
   err.classList.remove('show');
+  if (btn) { btn.disabled = true; btn.textContent = 'Please wait…'; }
 
-  const uid  = generateUID(name);
-  const user = { uid, name, phone };
+  try {
+    // Check if phone already registered in Firebase
+    const snap = await get(fbUserRef(phone));
+    if (snap.exists()) {
+      err.textContent='Account already exists. Please sign in.'; err.classList.add('show');
+      return;
+    }
 
-  // Save to Firebase (for uniqueness checks across all devices)
-  await set(fbUserRef(phone), user);
+    const uid  = generateUID(name);
+    const user = { uid, name, phone };
 
-  // Save to this device's local storage (for quick sign-in)
-  saveDeviceUser(user);
+    // Save to Firebase
+    await set(fbUserRef(phone), user);
 
-  currentUser = user;
-  document.getElementById('new-uid-display').textContent = uid;
-  document.getElementById('new-uid-name').textContent = name + ' · +91 ' + phone;
-  showCAuth('cauth-success');
+    // Save to this device's local storage
+    saveDeviceUser(user);
+
+    currentUser = user;
+    document.getElementById('new-uid-display').textContent = uid;
+    document.getElementById('new-uid-name').textContent = name + ' · +91 ' + phone;
+    showCAuth('cauth-success');
+
+  } catch(e) {
+    console.error('Register error:', e);
+    err.textContent = 'Connection error. Please check your internet and try again.';
+    err.classList.add('show');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'CREATE MY ID →'; }
+  }
 }
 
 /* ═════════════════════════════════════
@@ -2226,32 +2242,53 @@ function forgetAccount(phone) {
 async function doLogin() {
   const phone = document.getElementById('login-phone').value.trim();
   const err   = document.getElementById('login-error');
+  const btn   = document.querySelector('#cauth-login .ac-btn');
+
   if (!/^\d{10}$/.test(phone)) { err.textContent='Enter a valid 10-digit number.'; err.classList.add('show'); return; }
 
-  const snap = await get(fbUserRef(phone));
-  if (!snap.exists()) { err.textContent='No account found. Please register first.'; err.classList.add('show'); return; }
-
+  // Loading state
   err.classList.remove('show');
-  currentUser = snap.val();
-  saveDeviceUser(currentUser); // remember on this device
-  enterCustomerApp();
+  if (btn) { btn.disabled = true; btn.textContent = 'Signing in…'; }
+
+  try {
+    const snap = await get(fbUserRef(phone));
+    if (!snap.exists()) {
+      err.textContent='No account found. Please register first.'; err.classList.add('show');
+      return;
+    }
+    currentUser = snap.val();
+    saveDeviceUser(currentUser);
+    enterCustomerApp();
+
+  } catch(e) {
+    console.error('Login error:', e);
+    err.textContent = 'Connection error. Please check your internet and try again.';
+    err.classList.add('show');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'SIGN IN →'; }
+  }
 }
 
 async function loginAs(phone) {
-  const snap = await get(fbUserRef(phone));
-  if (!snap.exists()) {
-    // Account no longer exists — remove from device list
-    removeDeviceUser(phone);
-    loadSavedUsers();
-    return;
+  try {
+    const snap = await get(fbUserRef(phone));
+    if (!snap.exists()) {
+      removeDeviceUser(phone);
+      loadSavedUsers();
+      return;
+    }
+    currentUser = snap.val();
+    saveDeviceUser(currentUser);
+    enterCustomerApp();
+  } catch(e) {
+    console.error('LoginAs error:', e);
+    const list = document.getElementById('saved-users-list');
+    if (list) list.innerHTML = '<div style="color:#ff6b6b;font-size:.78rem;padding:8px 0;text-align:center;">Connection error. Check internet and try again.</div>';
   }
-  currentUser = snap.val();
-  saveDeviceUser(currentUser); // refresh in device list
-  enterCustomerApp();
 }
 
 function enterCustomerApp() {
-  if (!currentUser) return;
+  if (!currentUser) { console.error('enterCustomerApp: no currentUser'); return; }
   // Populate UI fields
   const initials = currentUser.name.split(' ').map(w=>w[0].toUpperCase()).join('').slice(0,2);
   document.getElementById('user-avatar').textContent    = initials;
