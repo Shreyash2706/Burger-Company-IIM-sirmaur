@@ -1,23 +1,24 @@
 /* ═══════════════════════════════════════════════════════════
    Burger Company — IIM Sirmaur Canteen
-   Service Worker v2 — Background Firebase Polling
-   
-   How it works:
-   1. App registers SW and sends user info + order statuses via postMessage
-   2. SW stores them and polls Firebase REST API every 30 seconds
-   3. When an order status changes to 'preparing' or 'ready', SW fires
-      a push notification directly — even when app is closed/backgrounded
-   4. Works on iOS 16.4+ (installed PWA) and Android Chrome
+   Service Worker v3 — Background Polling for Both Roles
+
+   Customer: polls for order status changes (payment verified / ready)
+   Outlet:   polls for new incoming orders (payment_uploaded)
 ═══════════════════════════════════════════════════════════ */
 
-const CACHE_NAME   = 'burger-co-v2';
-const DB_URL       = 'https://burger-company-iim-default-rtdb.asia-southeast1.firebasedatabase.app';
+const CACHE_NAME    = 'burger-co-v3';
+const DB_URL        = 'https://burger-company-iim-default-rtdb.asia-southeast1.firebasedatabase.app';
 const POLL_INTERVAL = 30000; // 30 seconds
 
-// ── State stored in SW ────────────────────────────────────
-let watchedUser    = null;  // { uid, name, phone }
-let knownStatuses  = {};    // { fbKey: status }
-let pollTimer      = null;
+// ── Customer state ────────────────────────────────────────
+let watchedUser   = null;   // { uid, name }
+let knownStatuses = {};     // { fbKey: status }
+
+// ── Outlet state ──────────────────────────────────────────
+let outletWatching   = false;
+let outletKnownKeys  = {};  // { fbKey: status } — all known orders
+
+let pollTimer = null;
 
 // ── Install ───────────────────────────────────────────────
 self.addEventListener('install', event => {
@@ -38,108 +39,154 @@ self.addEventListener('activate', event => {
   );
 });
 
-// ── Message from app ──────────────────────────────────────
-// App sends: { type: 'WATCH_ORDERS', user: {...}, statuses: {fbKey: status} }
-// App sends: { type: 'STOP_WATCH' }
+// ── Messages from app ─────────────────────────────────────
 self.addEventListener('message', event => {
   const msg = event.data;
   if (!msg) return;
 
-  if (msg.type === 'WATCH_ORDERS') {
-    watchedUser   = msg.user;
-    knownStatuses = msg.statuses || {};
-    startPolling();
-  } else if (msg.type === 'UPDATE_STATUSES') {
-    // App is active — just update our known statuses so we don't re-notify
-    knownStatuses = msg.statuses || {};
-  } else if (msg.type === 'STOP_WATCH') {
-    watchedUser = null;
-    stopPolling();
+  switch (msg.type) {
+
+    // Customer watching their own orders
+    case 'WATCH_ORDERS':
+      watchedUser   = msg.user;
+      knownStatuses = msg.statuses || {};
+      startPolling();
+      break;
+
+    // Customer app is open — just sync statuses so we don't double-notify
+    case 'UPDATE_STATUSES':
+      knownStatuses = msg.statuses || {};
+      break;
+
+    // Customer logged out
+    case 'STOP_WATCH':
+      watchedUser = null;
+      if (!outletWatching) stopPolling();
+      break;
+
+    // Outlet panel watching for new orders
+    case 'WATCH_OUTLET_ORDERS':
+      outletWatching  = true;
+      outletKnownKeys = msg.statuses || {};
+      startPolling();
+      break;
+
+    // Outlet logged out
+    case 'STOP_OUTLET_WATCH':
+      outletWatching  = false;
+      outletKnownKeys = {};
+      if (!watchedUser) stopPolling();
+      break;
   }
 });
 
-// ── Polling ───────────────────────────────────────────────
+// ── Polling control ───────────────────────────────────────
 function startPolling() {
   stopPolling();
-  pollFirebase(); // immediate first check
-  pollTimer = setInterval(pollFirebase, POLL_INTERVAL);
+  pollAll();
+  pollTimer = setInterval(pollAll, POLL_INTERVAL);
 }
 
 function stopPolling() {
   if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
 }
 
-async function pollFirebase() {
-  if (!watchedUser) return;
+// ── Main poll function ────────────────────────────────────
+async function pollAll() {
+  if (!watchedUser && !outletWatching) return;
 
   try {
-    // Fetch all orders from Firebase REST API (no SDK needed)
     const res  = await fetch(`${DB_URL}/orders.json`);
     if (!res.ok) return;
     const data = await res.json();
     if (!data) return;
 
-    // Loop through orders belonging to this user
-    Object.entries(data).forEach(([fbKey, order]) => {
-      if (!order || !order.customer) return;
-      if (order.customer.uid !== watchedUser.uid) return;
+    const entries = Object.entries(data);
 
-      const prevStatus = knownStatuses[fbKey];
-      const newStatus  = order.status;
+    // ── Customer: check for status changes on their orders ──
+    if (watchedUser) {
+      entries.forEach(([fbKey, order]) => {
+        if (!order || !order.customer) return;
+        if (order.customer.uid !== watchedUser.uid) return;
 
-      // Only notify if status actually changed to something actionable
-      if (prevStatus !== newStatus) {
-        knownStatuses[fbKey] = newStatus;
+        const prev = knownStatuses[fbKey];
+        const curr = order.status;
+        if (prev === curr) return;
 
-        if (newStatus === 'preparing' && prevStatus === 'payment_uploaded') {
-          fireNotification(
+        knownStatuses[fbKey] = curr;
+
+        if (curr === 'preparing' && prev === 'payment_uploaded') {
+          notify(
             '\uD83D\uDCB8 Payment Verified \u2014 Burger Company',
-            `Order #${String(order.queueNum).padStart(2,'0')} confirmed! Being prepared now \uD83D\uDC68\u200D\uD83C\uDF73`,
-            `prep_${fbKey}`
+            'Order #' + pad(order.queueNum) + ' confirmed! Being prepared now \uD83D\uDC68\u200D\uD83C\uDF73',
+            'prep_' + fbKey
           );
-        } else if (newStatus === 'ready') {
-          fireNotification(
+        } else if (curr === 'ready') {
+          notify(
             '\u2705 Order Ready \u2014 Burger Company',
-            `Order #${String(order.queueNum).padStart(2,'0')} is ready! Head to the main desk \uD83C\uDFC3`,
-            `ready_${fbKey}`
+            'Order #' + pad(order.queueNum) + ' is ready! Head to the main desk \uD83C\uDFC3',
+            'ready_' + fbKey
           );
-        } else if (newStatus === 'payment_rejected') {
-          fireNotification(
+        } else if (curr === 'payment_rejected') {
+          notify(
             '\u274C Payment Rejected \u2014 Burger Company',
-            `Order #${String(order.queueNum).padStart(2,'0')} \u2014 please re-upload your payment screenshot.`,
-            `rejected_${fbKey}`
+            'Order #' + pad(order.queueNum) + ' \u2014 please re-upload your payment screenshot.',
+            'rejected_' + fbKey
           );
         }
-      }
-    });
+      });
+    }
+
+    // ── Outlet: detect brand new orders ──────────────────
+    if (outletWatching) {
+      entries.forEach(([fbKey, order]) => {
+        if (!order) return;
+        const isNew = !(fbKey in outletKnownKeys);
+        outletKnownKeys[fbKey] = order.status;
+
+        if (isNew && order.status === 'payment_uploaded') {
+          const num   = pad(order.queueNum);
+          const name  = (order.customer && order.customer.name) || 'Customer';
+          const total = order.total ? '\u20b9' + order.total : '';
+          const items = order.items ? order.items.length + ' item' + (order.items.length !== 1 ? 's' : '') : '';
+          notify(
+            '\uD83D\uDED2 New Order #' + num + ' \u2014 Burger Company',
+            name + ' \u00b7 ' + items + ' ' + total + ' \u2014 Payment uploaded, verify now.',
+            'outlet_order_' + fbKey
+          );
+        }
+      });
+    }
+
   } catch(e) {
     console.warn('[SW] Poll error:', e);
   }
 }
 
-function fireNotification(title, body, tag) {
+function pad(n) { return String(n || '?').padStart(2, '0'); }
+
+function notify(title, body, tag) {
   self.registration.showNotification(title, {
     body,
-    icon      : 'icon-192.png',
-    badge     : 'icon-192.png',
+    icon    : 'icon-192.png',
+    badge   : 'icon-192.png',
     tag,
-    renotify  : false,
-    vibrate   : [200, 100, 200],
-    data      : { url: self.location.origin }
+    renotify: true,
+    vibrate : [200, 100, 200],
+    data    : { url: self.location.origin }
   });
 }
 
-// ── Notification click ────────────────────────────────────
+// ── Notification click: open app ──────────────────────────
 self.addEventListener('notificationclick', event => {
   event.notification.close();
-  const target = event.notification.data?.url || self.location.origin;
+  const url = event.notification.data?.url || self.location.origin;
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
-      for (const client of list) {
-        if (client.url.includes(self.location.origin) && 'focus' in client)
-          return client.focus();
+      for (const c of list) {
+        if (c.url.includes(self.location.origin) && 'focus' in c) return c.focus();
       }
-      if (clients.openWindow) return clients.openWindow(target);
+      if (clients.openWindow) return clients.openWindow(url);
     })
   );
 });
@@ -148,7 +195,6 @@ self.addEventListener('notificationclick', event => {
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
   if (!event.request.url.startsWith(self.location.origin)) return;
-  // Don't cache Firebase API calls
   if (event.request.url.includes('firebaseio.com') ||
       event.request.url.includes('firebase')) return;
 
