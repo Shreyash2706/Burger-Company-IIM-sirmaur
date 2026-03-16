@@ -3315,17 +3315,27 @@ async function triggerInstall() {
 let _pendingAppEntry = null; // 'customer' or 'outlet'
 
 function showSetupScreen(entryFn) {
-  // iOS Chrome — can't install or get notifications from Chrome
-  // Show setup screen so they know to switch to Safari
-  // (don't bypass — we want to tell them)
-  // iOS Safari browser (not installed) — show setup with instructions
-  // iOS standalone (installed) — may proceed to step 2
-  // iOS Safari in browser tab — instructions shown, then they
-  // reopen from home screen. Don't block entry on browser.
-  // But DO show setup so they see the instructions first.
-  // (they can tap "Done" and continue)
+  // ── iOS Safari browser (NOT installed to home screen) ──
+  // Notifications and install API both unavailable.
+  // Skip setup entirely — just let them in.
+  if (isIOSSafari() && !isInStandaloneMode()) {
+    entryFn();
+    return;
+  }
 
-  // Already fully set up — skip straight in
+  // ── iOS Chrome browser ──
+  // Can't install from Chrome on iPhone.
+  // Show a one-time informational screen, then let them in.
+  if (isIOSChrome() && !isInStandaloneMode()) {
+    const shownChromeTip = localStorage.getItem('bc_chrome_tip_shown');
+    if (shownChromeTip) { entryFn(); return; }
+    _pendingAppEntry = entryFn;
+    document.getElementById('setup-overlay').classList.add('show');
+    setupStep1UI();
+    return;
+  }
+
+  // ── Already fully set up ──
   if (Notification.permission === 'granted' && isInStandaloneMode()) {
     registerNotifSW();
     localStorage.setItem('bc_setup_done', '1');
@@ -3333,7 +3343,7 @@ function showSetupScreen(entryFn) {
     return;
   }
 
-  // Already set up before and notifications granted — skip
+  // ── Already set up before + notifications granted ──
   const setupDone = localStorage.getItem('bc_setup_done');
   if (setupDone && Notification.permission === 'granted') {
     registerNotifSW();
@@ -3341,9 +3351,9 @@ function showSetupScreen(entryFn) {
     return;
   }
 
+  // ── Show setup screen ──
   _pendingAppEntry = entryFn;
-  const overlay = document.getElementById('setup-overlay');
-  overlay.classList.add('show');
+  document.getElementById('setup-overlay').classList.add('show');
   setupStep1UI();
 }
 
@@ -3406,6 +3416,14 @@ function setupStep1UI() {
 }
 
 function completeInstallStep() {
+  // If iOS Chrome, mark tip as shown and go straight in
+  if (isIOSChrome() && !isInStandaloneMode()) {
+    localStorage.setItem('bc_chrome_tip_shown', '1');
+    document.getElementById('setup-overlay').classList.remove('show');
+    if (_pendingAppEntry) { _pendingAppEntry(); _pendingAppEntry = null; }
+    return;
+  }
+
   // Animate dot 1 → done, dot 2 → active
   document.getElementById('sdot-1').classList.remove('active');
   document.getElementById('sdot-1').classList.add('done');
@@ -3509,6 +3527,7 @@ async function registerNotifSW() {
 
 // ── Send push notification ────────────────────────────────
 function sendPushNotif(title, body, tag) {
+  if (!isInStandaloneMode()) return;  // only fire when installed as app, not in browser
   if (!notifSupported()) return;
   if (Notification.permission !== 'granted') return;
   if (pushedNotifs.has(tag)) return;
