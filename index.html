@@ -2246,6 +2246,9 @@ function doOutletLogin() {
   }
   err.classList.remove('show');
   subscribeOutletOrders();
+  // Immediately tell SW to start watching for outlet orders
+  // (don't wait for first Firebase snapshot — SW may have been killed)
+  activateOutletSW();
   // Route through mandatory setup screen
   showSetupScreen(() => goTo('screen-outlet-app'));
 }
@@ -2258,6 +2261,7 @@ function outletLogout() {
   stockStatus = {};
   outletKnownKeys.clear();
   outletFirstLoad = true;
+  localStorage.removeItem('bc_outlet_active');
   // Tell SW to stop watching outlet orders
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.ready.then(reg => {
@@ -2307,6 +2311,22 @@ function fireOutletNewOrderNotif(order) {
 }
 
 // Tell SW to poll Firebase for outlet orders too (background mode)
+// Activate outlet watch in SW immediately (on login, before orders arrive)
+function activateOutletSW() {
+  if (!('serviceWorker' in navigator)) return;
+  if (Notification.permission !== 'granted') return;
+  // Store outlet mode in localStorage so SW can restore after iOS kill
+  localStorage.setItem('bc_outlet_active', '1');
+  navigator.serviceWorker.ready.then(reg => {
+    if (reg.active) reg.active.postMessage({
+      type    : 'WATCH_OUTLET_ORDERS',
+      statuses: {},           // empty — SW will treat all current as known
+      fresh   : true          // flag: this is a fresh login, load existing as baseline
+    });
+  }).catch(() => {});
+}
+
+// Sync current known orders to SW after each Firebase update
 function syncOutletToSW(ordersList) {
   if (!('serviceWorker' in navigator)) return;
   if (Notification.permission !== 'granted') return;
@@ -2315,7 +2335,8 @@ function syncOutletToSW(ordersList) {
   navigator.serviceWorker.ready.then(reg => {
     if (reg.active) reg.active.postMessage({
       type    : 'WATCH_OUTLET_ORDERS',
-      statuses: statuses
+      statuses: statuses,
+      fresh   : false         // ongoing sync — only truly new keys should notify
     });
   }).catch(() => {});
 }
@@ -3382,6 +3403,7 @@ window.handleInstallOverlayClick = handleInstallOverlayClick;
 window.triggerInstall            = triggerInstall;
 window.copyURLAndClose           = copyURLAndClose;
 window.notifModalAllow           = notifModalAllow;
+window.activateOutletSW          = activateOutletSW;
 window.notifModalDismiss         = notifModalDismiss;
 window.requestNotifPermission    = notifModalAllow;
 window.dismissNotifBanner        = () => {};
