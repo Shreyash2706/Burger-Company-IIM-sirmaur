@@ -1828,7 +1828,27 @@ input:checked + .toggle-slider:before{transform:translateX(20px);}
         ＋ Add to Home Screen
       </button>
 
-      <!-- iOS manual instructions -->
+      <!-- iOS Chrome — must switch to Safari -->
+      <div class="setup-ios-steps" id="ios-chrome-warning" style="display:none;">
+        <div class="setup-ios-row" style="flex-direction:column;align-items:center;text-align:center;gap:8px;">
+          <span style="font-size:2rem;">🧭</span>
+          <div>
+            <strong style="color:var(--gold);">Please open this page in Safari</strong>
+            <div style="margin-top:6px;font-size:.8rem;color:var(--ash);">Chrome on iPhone doesn't support home screen install. Copy the link and open it in <strong>Safari</strong> to continue.</div>
+          </div>
+        </div>
+        <div class="setup-ios-row">
+          <span class="setup-ios-num">1</span>Tap the address bar and <strong>copy the URL</strong>
+        </div>
+        <div class="setup-ios-row">
+          <span class="setup-ios-num">2</span>Open <strong>Safari</strong> and paste the URL
+        </div>
+        <div class="setup-ios-row">
+          <span class="setup-ios-num">3</span>Tap <strong>Share ⎋ → Add to Home Screen</strong>
+        </div>
+      </div>
+
+      <!-- iOS Safari manual instructions -->
       <div class="setup-ios-steps" id="ios-install-steps" style="display:none;">
         <div class="setup-ios-row"><span class="setup-ios-num">1</span>Tap the <strong>Share</strong> button <span style="font-size:1.1rem;">⎋</span> at the bottom of Safari</div>
         <div class="setup-ios-row"><span class="setup-ios-num">2</span>Scroll down and tap <strong>"Add to Home Screen"</strong></div>
@@ -3256,6 +3276,15 @@ function savePushedNotifs() {
 
 // Platform helpers
 function isIOS() { return /iphone|ipad|ipod/i.test(navigator.userAgent); }
+function isIOSChrome() {
+  // Chrome on iOS identifies itself with 'CriOS' in UA
+  return isIOS() && /CriOS/i.test(navigator.userAgent);
+}
+function isIOSSafari() {
+  // Safari on iOS: has 'Safari' but NOT 'CriOS' or 'FxiOS' or 'OPiOS'
+  return isIOS() && /Safari/i.test(navigator.userAgent)
+    && !/CriOS|FxiOS|OPiOS|mercury/i.test(navigator.userAgent);
+}
 function isInStandaloneMode() {
   return window.matchMedia('(display-mode: standalone)').matches
       || window.navigator.standalone === true;
@@ -3286,12 +3315,15 @@ async function triggerInstall() {
 let _pendingAppEntry = null; // 'customer' or 'outlet'
 
 function showSetupScreen(entryFn) {
-  // Safari browser on iPhone/iPad — no install prompt, no notifications
-  // Nothing we can do — just let them in directly
-  if (isIOS() && !isInStandaloneMode()) {
-    entryFn();
-    return;
-  }
+  // iOS Chrome — can't install or get notifications from Chrome
+  // Show setup screen so they know to switch to Safari
+  // (don't bypass — we want to tell them)
+  // iOS Safari browser (not installed) — show setup with instructions
+  // iOS standalone (installed) — may proceed to step 2
+  // iOS Safari in browser tab — instructions shown, then they
+  // reopen from home screen. Don't block entry on browser.
+  // But DO show setup so they see the instructions first.
+  // (they can tap "Done" and continue)
 
   // Already fully set up — skip straight in
   if (Notification.permission === 'granted' && isInStandaloneMode()) {
@@ -3336,7 +3368,25 @@ function setupStep1UI() {
     return;
   }
 
-  // iOS — show manual steps
+  // iOS Chrome — can't install from Chrome, tell them to use Safari
+  if (isIOSChrome()) {
+    document.getElementById('ios-chrome-warning').style.display = 'block';
+    iosSteps.style.display   = 'none';
+    installBtn.style.display = 'none';
+    skipBtn.textContent      = "I'll switch to Safari later — Continue →";
+    skipBtn.style.color      = 'rgba(255,255,255,.35)';
+    return;
+  }
+
+  // iOS Safari browser — show manual Add to Home Screen steps
+  if (isIOSSafari()) {
+    iosSteps.style.display   = 'block';
+    installBtn.style.display = 'none';
+    skipBtn.textContent      = 'Done — Continue →';
+    return;
+  }
+
+  // Other iOS browser (Firefox, Opera etc) — generic message
   if (isIOS()) {
     iosSteps.style.display   = 'block';
     installBtn.style.display = 'none';
