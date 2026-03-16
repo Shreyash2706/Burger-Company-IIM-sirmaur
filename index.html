@@ -1912,6 +1912,8 @@ let pendingPickupOrder = null;
 let currentTab = 'menu';
 let currentOutletTab = 'orders';
 let outletUnsubscribe = null;
+let outletKnownKeys  = new Set(); // tracks seen order keys — detect truly new ones
+let outletFirstLoad  = true;      // skip notifications on initial snapshot load
 let customerUnsubscribe = null;
 let stockUnsubscribe = null;
 let shownPickupIds = new Set(); // prevent duplicate popups
@@ -2254,9 +2256,68 @@ function outletLogout() {
   if (upiQrUnsubscribe)   { upiQrUnsubscribe();   upiQrUnsubscribe   = null; }
   orders = [];
   stockStatus = {};
+  outletKnownKeys.clear();
+  outletFirstLoad = true;
+  // Tell SW to stop watching outlet orders
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.ready.then(reg => {
+      if (reg.active) reg.active.postMessage({ type: 'STOP_OUTLET_WATCH' });
+    }).catch(() => {});
+  }
   document.getElementById('outlet-user').value = '';
   document.getElementById('outlet-pass').value = '';
   goTo('screen-role');
+}
+
+/* ═════════════════════════════════════
+   OUTLET — NEW ORDER NOTIFICATIONS
+═════════════════════════════════════ */
+function fireOutletNewOrderNotif(order) {
+  const num   = String(order.queueNum || '?').padStart(2, '0');
+  const name  = (order.customer && order.customer.name) || 'Customer';
+  const total = order.total ? '\u20b9' + order.total : '';
+  const count = order.items ? order.items.length + ' item' + (order.items.length > 1 ? 's' : '') : '';
+
+  // Always show in-app toast
+  showToast('\U0001F6D2 New Order #' + num + '  ' + name + '  ' + total, 'outlet');
+
+  // Background push (installed PWA only)
+  if (!isInStandaloneMode()) return;
+  if (!notifSupported()) return;
+  if (Notification.permission !== 'granted') return;
+
+  const tag = 'outlet_order_' + order.fbKey;
+  if (pushedNotifs.has(tag)) return;
+  pushedNotifs.add(tag); savePushedNotifs();
+
+  navigator.serviceWorker.ready.then(reg => {
+    reg.showNotification('\U0001F6D2 New Order #' + num + ' \u2014 Burger Company', {
+      body   : name + ' \u00b7 ' + count + ' ' + total + '\nPayment uploaded \u2014 tap to verify.',
+      icon   : 'icon-192.png',
+      badge  : 'icon-192.png',
+      tag,
+      renotify: true,
+      vibrate : [300, 100, 300, 100, 300],
+      data    : { url: location.href }
+    });
+  }).catch(() => {
+    try { new Notification('\U0001F6D2 New Order #' + num, { body: name + ' ' + total, icon: 'icon-192.png' }); }
+    catch(e) {}
+  });
+}
+
+// Tell SW to poll Firebase for outlet orders too (background mode)
+function syncOutletToSW(ordersList) {
+  if (!('serviceWorker' in navigator)) return;
+  if (Notification.permission !== 'granted') return;
+  const statuses = {};
+  ordersList.forEach(o => { if (o.fbKey) statuses[o.fbKey] = o.status; });
+  navigator.serviceWorker.ready.then(reg => {
+    if (reg.active) reg.active.postMessage({
+      type    : 'WATCH_OUTLET_ORDERS',
+      statuses: statuses
+    });
+  }).catch(() => {});
 }
 
 /* ═════════════════════════════════════
@@ -2264,9 +2325,31 @@ function outletLogout() {
 ═════════════════════════════════════ */
 function subscribeOutletOrders() {
   if (outletUnsubscribe) outletUnsubscribe();
+  outletFirstLoad = true; // reset on each login
+  outletKnownKeys.clear();
+
   outletUnsubscribe = onValue(fbOrdersRef(), (snap) => {
-    orders = snapshotToOrders(snap);
+    const incoming = snapshotToOrders(snap);
+
+    if (outletFirstLoad) {
+      // First snapshot = existing orders. Just record keys, no alerts.
+      incoming.forEach(o => { if (o.fbKey) outletKnownKeys.add(o.fbKey); });
+      outletFirstLoad = false;
+    } else {
+      // Subsequent updates — find orders we haven't seen before
+      incoming.forEach(o => {
+        if (!o.fbKey) return;
+        if (!outletKnownKeys.has(o.fbKey) && o.status === 'payment_uploaded') {
+          // Brand new order just arrived
+          fireOutletNewOrderNotif(o);
+        }
+        outletKnownKeys.add(o.fbKey);
+      });
+    }
+
+    orders = incoming;
     renderOutlet();
+    syncOutletToSW(incoming);
   });
   if (stockUnsubscribe) stockUnsubscribe();
   stockUnsubscribe = onValue(fbStockRef(), (snap) => {
